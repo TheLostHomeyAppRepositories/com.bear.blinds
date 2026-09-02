@@ -6,9 +6,16 @@ const { SIGNAL_ID, CHANNEL_NUMBERS, identifyFrame } = require('./bear-protocol')
 // How long to listen for a button press before giving up, in milliseconds.
 const LEARN_TIMEOUT = 30000;
 
+// Ambient 433 MHz traffic occasionally fits our timings. The unrecognised-frame
+// log exists to diagnose a silent receiver, not to narrate the airwaves, so it
+// is throttled to one line per minute with a count of what it skipped.
+const UNRECOGNISED_LOG_INTERVAL = 60000;
+
 class BearBlindDriver extends Homey.Driver {
     async onInit() {
         this.learnAttempts = 0;
+        this.unrecognisedSinceLog = 0;
+        this.lastUnrecognisedLog = 0;
 
         // RX is shared: every paired blind listens so it can follow the physical
         // remote, and pairing listens to learn a new address. Homey's enableRX is
@@ -25,9 +32,18 @@ class BearBlindDriver extends Homey.Driver {
             // Log rather than drop silently. Homey gives the identical symptom —
             // enableRX() resolving while no payload ever reaches a device —
             // whether frames are not arriving at all or arriving and failing to
-            // decode, and this line is what tells those two apart.
+            // decode, and this line is what tells those two apart. It found both
+            // of the receive bugs in RF_PROTOCOL.md, one run each.
+            this.unrecognisedSinceLog += 1;
+            const now = Date.now();
+            if (now - this.lastUnrecognisedLog < UNRECOGNISED_LOG_INTERVAL) return;
+
+            const skipped = this.unrecognisedSinceLog - 1;
             this.log(`rx unrecognised: ${payload.length} symbols`
-                + ` [${payload.join('')}]${deviation === undefined ? '' : ` dev ${deviation}`}`);
+                + ` [${payload.join('')}]${deviation === undefined ? '' : ` dev ${deviation}`}`
+                + (skipped > 0 ? ` (+${skipped} more in the last minute)` : ''));
+            this.lastUnrecognisedLog = now;
+            this.unrecognisedSinceLog = 0;
             return;
         }
 

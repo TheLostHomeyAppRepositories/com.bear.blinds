@@ -4,6 +4,9 @@ Reverse-engineered from 18 button presses captured off a single 5-channel Bear h
 Homey's built-in RF signal recorder — every channel and the ALL position, each with UP, DOWN and
 STOP.
 
+Verified on real hardware in both directions: pairing learns the handset, all three buttons drive
+the blinds one movement per command, and Homey follows the handset.
+
 This is a working hypothesis, not a manufacturer specification. Treat the structure section as a
 guide for decoding further commands.
 
