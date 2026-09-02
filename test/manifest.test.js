@@ -135,6 +135,21 @@ test('the travel times are separate, and both cover a slow awning', () => {
     assert.equal(byId.stop_lead.min, 0);
 });
 
+test('every flow card argument the user fills in is labelled', () => {
+    // `verified` is the level CI validates at and a stricter bar than `publish`;
+    // it requires a title on each argument, and the app is rejected outright
+    // without one. Homey adds the `device` argument itself and exempts it.
+    for (const [type, cards] of Object.entries(app.flow || {})) {
+        for (const card of cards) {
+            for (const arg of card.args || []) {
+                if (arg.type === 'device') continue;
+                assert.ok(arg.title && arg.title.en,
+                    `flow.${type}['${card.id}'].args['${arg.name}'] needs a title`);
+            }
+        }
+    }
+});
+
 test('the signal admits both the transmitted and the received frame length', () => {
     // 40 goes out; 39 comes back, because Homey never closes the final word.
     // The window has to cover both or the app is deaf, and nothing wider —

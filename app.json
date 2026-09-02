@@ -123,6 +123,12 @@
           {
             "name": "end",
             "type": "dropdown",
+            "title": {
+              "en": "End stop",
+              "nl": "Eindaanslag",
+              "de": "Endanschlag",
+              "fr": "Butée"
+            },
             "values": [
               {
                 "id": "open",
