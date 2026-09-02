@@ -11,6 +11,11 @@ const LEARN_TIMEOUT = 30000;
 // is throttled to one line per minute with a count of what it skipped.
 const UNRECOGNISED_LOG_INTERVAL = 60000;
 
+// The shortest run the calibration wizard will accept as a measurement, and the
+// minimum the travel time settings allow. A tap that fast is someone hitting the
+// button rather than watching the blind.
+const MIN_TRAVEL_TIME = 1000;
+
 class BearBlindDriver extends Homey.Driver {
     async onInit() {
         this.learnAttempts = 0;
@@ -24,6 +29,12 @@ class BearBlindDriver extends Homey.Driver {
         this.rxListeners = new Set();
         this.signal = this.homey.rf.getSignal433(SIGNAL_ID);
         this.signal.on('payload', this.onPayload.bind(this));
+
+        // Homey generates the flow cards for both capabilities. This is the one
+        // card it cannot: a blind that answers nothing needs a way to be told to
+        // go and find out where it is.
+        this.homey.flow.getActionCard('recalibrate')
+            .registerRunListener(async ({ device, end }) => device.recalibrate(end));
     }
 
     onPayload(payload, isFirst, deviation) {
@@ -86,8 +97,12 @@ class BearBlindDriver extends Homey.Driver {
 
         session.setHandler('list_devices', async () => {
             if (address === null) {
+                // Reachable: the learn step asks for Homey's nav bar, so its Continue
+                // button is live under the view from the moment it opens, before any
+                // remote has been heard. Saying so beats handing back an empty list,
+                // which reads as "you have no blinds".
                 this.log('[pair] list_devices called with no learned address');
-                return [];
+                throw new Error(this.homey.__('pair.not_learned'));
             }
 
             // One handset drives every channel, so a single press is enough to
@@ -100,6 +115,51 @@ class BearBlindDriver extends Homey.Driver {
                 data: { id: `bear-${address.join('')}-ch${channel}` },
                 store: { address, channel },
             }));
+        });
+    }
+
+    // The calibration wizard. It measures the two travel times by driving the
+    // blind and letting the person watching it say when each run ended — there
+    // is no sensor, so they are the sensor.
+    //
+    // The clock is here rather than in the view because the view may be a phone
+    // on a slow link, and that round trip would land inside the measurement.
+    async onRepair(session, device) {
+        const log = (...args) => this.log('[calibrate]', ...args);
+        let startedAt = null;
+
+        session.setHandler('drive', async ({ direction }) => {
+            if (direction !== 'up' && direction !== 'down') {
+                throw new Error(`Unknown direction: ${direction}`);
+            }
+            await device.calibrationDrive(direction);
+            startedAt = Date.now();
+            log(`running ${direction}`);
+            return true;
+        });
+
+        session.setHandler('mark', async () => {
+            const elapsed = startedAt === null ? 0 : Date.now() - startedAt;
+            startedAt = null;
+            await device.calibrationStop();
+            log(`run ended after ${elapsed}ms`);
+            return elapsed;
+        });
+
+        session.setHandler('save', async ({ upTime, downTime }) => {
+            if (upTime < MIN_TRAVEL_TIME || downTime < MIN_TRAVEL_TIME) {
+                log(`rejected ${upTime}ms up / ${downTime}ms down as too short to be a run`);
+                throw new Error(this.homey.__('calibrate.too_short'));
+            }
+            await device.applyCalibration(upTime, downTime);
+            return true;
+        });
+
+        // Closing the wizard halfway through must not leave a motor running.
+        session.setHandler('disconnect', async () => {
+            if (startedAt === null) return;
+            log('left mid-run; stopping the blind');
+            await device.calibrationStop().catch(err => this.error('[calibrate]', err.message));
         });
     }
 

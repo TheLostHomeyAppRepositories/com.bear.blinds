@@ -41,14 +41,98 @@ test('the version in package.json matches the app manifest', () => {
 });
 
 test('the driver is a blind that Homey will route received frames to', () => {
-    // windowcoverings_state is Homey's native up/idle/down ternary. Homey
-    // generates its flow cards, which is why this app defines none of its own.
-    assert.deepEqual(driverCompose.capabilities, ['windowcoverings_state']);
+    // windowcoverings_state is Homey's native up/idle/down ternary and
+    // windowcoverings_set its 0-1 position slider. Homey's own documentation
+    // asks for both on a covering that takes precise levels as well as up, down
+    // and stop, and generates the flow cards for each — which is why this app
+    // defines none of its own.
+    assert.deepEqual(driverCompose.capabilities, ['windowcoverings_state', 'windowcoverings_set']);
     assert.deepEqual(driverCompose.connectivity, ['rf433']);
 
     // Without satelliteMode Homey routes no received frame to the driver at all,
     // while enableRX() still resolves successfully. See RF_PROTOCOL.md.
     assert.equal(driverCompose.rf433.satelliteMode, true);
+});
+
+test('every custom view has a file where Homey looks for it', () => {
+    // Pair views are read from drivers/<id>/pair, repair views from
+    // drivers/<id>/repair — a different folder, which is not obvious and which
+    // the build says nothing about. Getting it wrong validates and packages
+    // cleanly, and fails only when a user opens the view, as
+    // `unknown_error_getting_file`.
+    for (const [key, folder] of [['pair', 'pair'], ['repair', 'repair']]) {
+        for (const view of driverCompose[key] || []) {
+            // A view built from one of Homey's own templates brings its own HTML.
+            if (view.template || view.$template) continue;
+
+            const file = path.join(root, 'drivers', driverCompose.id, folder, `${view.id}.html`);
+            assert.ok(fs.existsSync(file), `${key} view '${view.id}' needs drivers/${driverCompose.id}/${folder}/${view.id}.html`);
+        }
+    }
+});
+
+test('a view either uses Homey\'s Continue button or moves itself on, never both', () => {
+    // A step declaring `navigation` gets Homey's own nav bar and its Continue
+    // button underneath whatever the view has drawn. That button is the one to
+    // use — it is where people expect it and it matches every other wizard — so
+    // a view that has it must not also advance itself, or there are two controls
+    // on screen doing the same job. `learn` takes Homey's; `calibrate` is a
+    // repair view, which has no next step and ends with Homey.done() instead.
+    for (const key of ['pair', 'repair']) {
+        for (const view of driverCompose[key] || []) {
+            if (view.template) continue;
+
+            const html = fs.readFileSync(
+                path.join(root, 'drivers', driverCompose.id, key, `${view.id}.html`), 'utf8');
+            const advancesItself = /Homey\.(showView|nextView)\s*\(/.test(html);
+
+            assert.ok(!(view.navigation && advancesItself),
+                `${key} view '${view.id}' has Homey's Continue button, so it must not also move itself on`);
+
+            // A pair view is a step on the way somewhere and needs one of the two.
+            // A repair view is not: it is the whole session, and finishes rather
+            // than advancing.
+            if (key === 'pair') {
+                assert.ok(view.navigation || advancesItself,
+                    `pair view '${view.id}' offers no way forward`);
+            } else {
+                assert.match(html, /Homey\.done\s*\(/,
+                    `repair view '${view.id}' must end the session with Homey.done()`);
+            }
+        }
+    }
+});
+
+test('the settings the device reads are the settings the manifest offers', () => {
+    // device.js falls back to its own defaults for a missing setting, so a
+    // renamed or dropped one goes unnoticed at runtime: the blind keeps working
+    // and quietly ignores what the user typed. These are the ids it reads.
+    const ids = driverCompose.settings
+        .flatMap(setting => (setting.type === 'group' ? setting.children : [setting]))
+        .map(setting => setting.id);
+
+    assert.deepEqual(ids.slice().sort(), [
+        'invert_position', 'stop_lead', 'travel_time_down', 'travel_time_up',
+    ]);
+});
+
+test('the travel times are separate, and both cover a slow awning', () => {
+    const byId = Object.fromEntries(driverCompose.settings
+        .flatMap(setting => (setting.type === 'group' ? setting.children : [setting]))
+        .map(setting => [setting.id, setting]));
+
+    for (const id of ['travel_time_up', 'travel_time_down']) {
+        // Seconds. A motor that moves at all takes more than one, and 5 minutes
+        // is past anything a single tube drives.
+        assert.equal(byId[id].units.en, 's');
+        assert.equal(byId[id].min, 1);
+        assert.equal(byId[id].max, 300);
+    }
+
+    // Milliseconds, and allowed to be zero: on a fast link the lead is a
+    // correction the user may not need at all.
+    assert.equal(byId.stop_lead.units.en, 'ms');
+    assert.equal(byId.stop_lead.min, 0);
 });
 
 test('the signal admits both the transmitted and the received frame length', () => {

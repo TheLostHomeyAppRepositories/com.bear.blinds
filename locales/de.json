@@ -11,6 +11,30 @@
     "failed": "Deine Fernbedienung wurde nicht gefunden",
     "timeout": "Homey hat keinen Tastendruck einer Bear-Fernbedienung gehört. Bringe die Fernbedienung näher an Homey und versuche es erneut.",
     "retry": "Erneut versuchen",
-    "channel": "Kanal"
+    "channel": "Kanal",
+    "found_hint": "Wähle als Nächstes die Kanäle aus, die du wirklich nutzt. Sind sie hinzugefügt, kalibriere jedes Gerät: öffne es in Homey und wähle Einstellungen → Wartung → Reparatur versuchen. Solange die Laufzeit einer Jalousie nicht gemessen ist, kann Homey sie auf und ab fahren, aber nicht auf einer Position halten.",
+    "not_learned": "Homey kennt deine Fernbedienung noch nicht. Gehe zurück und drücke eine Taste auf der Fernbedienung."
+  },
+  "calibrate": {
+    "title": "Kalibrieren",
+    "intro": "Diese Jalousie kalibrieren",
+    "intro_hint": "Homey kann nicht sehen, wo die Jalousie steht; er kann nur ihre Laufzeit messen. Deshalb fährt sie hier von Ende zu Ende: erst ganz zu, dann ganz auf, dann wieder ganz zu. Tippe genau in dem Moment auf die Taste, in dem sie ein Ende erreicht. Bleib, wo du sie sehen kannst.",
+    "start": "Starten",
+    "prepare": "Jalousie wird geschlossen",
+    "prepare_hint": "Sie fährt ganz nach unten, damit die Messung an einem Ende beginnt, das Homey kennt. Tippe, sobald sie steht.",
+    "at_bottom": "Ganz geschlossen",
+    "opening": "Öffnen wird gestoppt",
+    "opening_hint": "Tippe in dem Moment, in dem die Jalousie oben ankommt und stehen bleibt.",
+    "at_top": "Ganz geöffnet",
+    "closing": "Schließen wird gestoppt",
+    "closing_hint": "Tippe in dem Moment, in dem die Jalousie unten ankommt und stehen bleibt.",
+    "measured": "Öffnet in {{up}}s, schließt in {{down}}s",
+    "done": "Kalibriert",
+    "done_hint": "Homey kennt jetzt die Laufzeiten dieser Jalousie und weiß, dass sie gerade ganz geschlossen ist.",
+    "finish": "Fertig",
+    "failed": "Kalibrierung nicht abgeschlossen",
+    "retry": "Neu beginnen",
+    "too_short": "Diese Fahrt dauerte weniger als eine Sekunde. Beginne neu und tippe erst, wenn die Jalousie das Ende wirklich erreicht hat.",
+    "stopwatch": "{{seconds}}s"
   }
 }

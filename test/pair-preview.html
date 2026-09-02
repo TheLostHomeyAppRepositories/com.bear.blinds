@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Bear pair &amp; repair preview</title>
+  <style>
+    /* Dev-only preview of the app's two custom wizard views, styled with Athom's own CSS from
+       test/homey-css/. Never shipped — test/ is in .homeyignore. Must be served over http(s),
+       not file://, or the fetches below are blocked as cross-origin.
+
+           python3 -m http.server 8731 && open http://127.0.0.1:8731/test/pair-preview.html
+
+       Background on the wizard structure, the CSS and dark mode: test/homey-css/README.md. */
+    :root {
+      --bg: #f2f3f7;
+      --surface: #ffffff;
+      --border: #e2e4ea;
+      --text: #1a1d29;
+      --text-muted: #676c7e;
+      --accent: #4f46e5;
+      --radius: 12px;
+      --radius-sm: 8px;
+      --shadow: 0 1px 2px rgba(16, 18, 27, 0.04), 0 8px 24px rgba(16, 18, 27, 0.06);
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      margin: 0;
+      padding: 18px 20px 60px;
+      background: var(--bg);
+      color: var(--text);
+    }
+    .page { max-width: 760px; margin: 0 auto; }
+
+    header { margin-bottom: 20px; }
+    h1 { font-size: 18px; font-weight: 700; margin: 0 0 6px; letter-spacing: -0.01em; }
+    header p { font-size: 13px; line-height: 1.5; color: var(--text-muted); margin: 0; }
+    code { font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 0.92em; }
+
+    section { margin-bottom: 28px; }
+
+    .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .row > .label {
+      font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+      color: var(--text-muted);
+    }
+
+    button {
+      font: inherit; font-size: 13px; font-weight: 600; color: var(--text);
+      padding: 8px 14px; cursor: pointer;
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm);
+      box-shadow: 0 1px 2px rgba(16, 18, 27, 0.03);
+      transition: background 0.15s ease, border-color 0.15s ease, transform 0.05s ease;
+    }
+    button:hover { border-color: #c8cbd6; background: #fafafe; }
+    button:active { transform: translateY(1px); }
+    button[aria-pressed='true'] { border-color: var(--accent); color: var(--accent); background: #eeecfd; }
+
+    .controls-card {
+      display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      box-shadow: var(--shadow); padding: 14px 16px; margin-bottom: 20px;
+    }
+    .controls-card .divider { width: 1px; align-self: stretch; background: var(--border); }
+
+    .banner {
+      border-radius: var(--radius-sm); padding: 12px 14px; margin-bottom: 20px;
+      font-size: 13px; line-height: 1.55; display: none;
+    }
+    .banner.visible { display: block; }
+    .banner.warn { background: #fff6e5; border: 1px solid #f5d69a; color: #6b4a06; }
+    .banner strong { display: block; margin-bottom: 4px; }
+    .banner ul { margin: 6px 0 0; padding-left: 20px; }
+
+    .preview-card {
+      display: flex; justify-content: center;
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      box-shadow: var(--shadow); padding: 24px;
+    }
+    .frame-wrap {
+      display: inline-block; border: 1px solid #ccc; background: #ffffff;
+      border-radius: 10px; overflow: hidden;
+    }
+    html[data-theme='dark'] .frame-wrap { background: #0b0d12; border-color: #333; }
+    iframe { display: block; width: 380px; height: 620px; border: 0; }
+
+    .log {
+      font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 12px; line-height: 1.6;
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm);
+      box-shadow: var(--shadow); padding: 12px; max-height: 180px; overflow-y: auto;
+      white-space: pre-wrap; color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header>
+      <h1>Bear pair &amp; repair preview</h1>
+      <p>The live view files in Homey's own wizard chrome, against a stub <code>Homey</code>
+        bridge and the app's real <code>locales/en.json</code>. Dark inverts rather than
+        re-themes, matching the device.</p>
+    </header>
+
+    <div class="banner" id="banner"></div>
+
+    <div class="controls-card">
+      <div class="row">
+        <span class="label">View</span>
+        <button class="view-btn" data-view="learn">Pair · learn</button>
+        <button class="view-btn" data-view="calibrate">Repair · calibrate</button>
+      </div>
+      <div class="divider"></div>
+      <div class="row">
+        <span class="label">Theme</span>
+        <button class="theme-btn" data-theme="light">Light</button>
+        <button class="theme-btn" data-theme="dark">Dark</button>
+        <button class="theme-btn" data-theme="">Auto (OS)</button>
+      </div>
+      <div class="divider"></div>
+      <div class="row">
+        <span class="label">Driver</span>
+        <span id="outcomeButtons"></span>
+      </div>
+      <div class="divider"></div>
+      <button id="reload">Reload view</button>
+    </div>
+
+    <section>
+      <div class="preview-card">
+        <div class="frame-wrap"><iframe id="preview" title="wizard view"></iframe></div>
+      </div>
+    </section>
+
+    <section>
+      <h2 style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin:0 0 10px;">Bridge log</h2>
+      <div class="log" id="log"></div>
+    </section>
+  </div>
+
+  <script>
+    var iframe = document.getElementById('preview');
+    var logEl = document.getElementById('log');
+    var bannerEl = document.getElementById('banner');
+    var outcomeButtons = document.getElementById('outcomeButtons');
+
+    var strings = null;
+    var manifest = null;
+    var currentTheme = '';
+    var currentView = 'learn';
+    var currentOutcome = '';
+
+    // Homey darkens a pair view by inverting it, not by theming the --homey-* tokens (they have
+    // no dark values at all). Same filter its web app defines as --theme-filter-dark-mode; the
+    // hue-rotate keeps blues blue.
+    var DARK_FILTER = 'invert(1) hue-rotate(180deg)';
+
+    // `section` is where the step is declared in driver.compose.json, which is what
+    // decides whether Homey puts its own Continue button under the view.
+    var VIEWS = {
+      learn: {
+        section: 'pair',
+        path: '../drivers/blind/pair/learn.html',
+        outcomes: [
+          { id: 'found', label: 'Remote found' },
+          { id: 'timeout', label: 'Heard nothing' }
+        ]
+      },
+      calibrate: {
+        section: 'repair',
+        path: '../drivers/blind/repair/calibrate.html',
+        outcomes: [
+          { id: 'normal', label: 'Normal' },
+          { id: 'tooshort', label: 'Rejects the timing' }
+        ]
+      }
+    };
+
+    // The step as the driver declares it. A step with a `navigation` key gets Homey's own
+    // nav bar and its Continue button, on top of whatever the view draws itself — which is
+    // how a view ends up with two buttons doing the same job.
+    function currentStep() {
+      var section = (manifest || {})[VIEWS[currentView].section] || [];
+      for (var i = 0; i < section.length; i++) {
+        if (section[i].id === currentView) return section[i];
+      }
+      return null;
+    }
+
+    // homey.css is the Style Library manifest (@imports only); homey.drivers.css is the wizard
+    // chrome — similar names, unrelated files. `required` = carries rules these views need.
+    var CSS_FILES = [
+      { path: 'homey-css/css/homey.drivers.css',     required: true,  note: 'wizard chrome (#hy-wrap / .hy-view)' },
+      { path: 'homey-css/css/homey.css',             required: true,  note: 'Style Library import manifest' },
+      { path: 'homey-css/css/_homey-variables.css',  required: true,  note: 'every --homey-* token both views use' },
+      { path: 'homey-css/css/_base.css',             required: true,  note: 'reset / base elements' },
+      { path: 'homey-css/css/_homey-button.css',     required: true,  note: '.homey-button-primary-full' },
+      { path: 'homey-css/css/_homey-typography.css', required: true,  note: 'imported by homey.css' },
+      { path: 'homey-css/css/_homey-form.css',       required: true,  note: 'imported by homey.css' },
+      { path: 'homey-css/css/_homey-icon.css',       required: true,  note: 'imported by homey.css' },
+      { path: 'homey-css/font/roboto/roboto.css',        required: false, note: 'Roboto @font-face declarations' },
+      // Only the first two are fetched when these views render; a missing one is synthesised
+      // from Regular with the wrong metrics, and font metrics are most of what this exists to
+      // get right. Bold is .homey-title's weight, which neither view uses — kept for the next one.
+      { path: 'homey-css/font/roboto/Roboto-Regular.ttf', required: false, note: 'Roboto 400 — hint and status lines' },
+      { path: 'homey-css/font/roboto/Roboto-Medium.ttf',  required: false, note: 'Roboto 500 — message, stopwatch, button' },
+      { path: 'homey-css/font/roboto/Roboto-Bold.ttf',    required: false, note: 'Roboto 700 — .homey-title, unused by these views' }
+    ];
+
+    function log(line) {
+      logEl.textContent += line + '\n';
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    function abs(path) { return new URL(path, location.href).href; }
+    function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+    // 'ok' | 'missing' | 'errorpage'. A file saved from a wrong URL is an HTML 404 body under the
+    // right filename, and passes any presence-only check. See test/homey-css/README.md.
+    function exists(path) {
+      return fetch(abs(path), { method: 'GET', cache: 'no-store' })
+        .then(function (res) {
+          if (!res.ok) return 'missing';
+          if (/\.ttf$/i.test(path)) return 'ok';
+          return res.text().then(function (body) {
+            return /^\s*<(!doctype\s+html|html[\s>])/i.test(body) ? 'errorpage' : 'ok';
+          });
+        })
+        .catch(function () { return 'missing'; });
+    }
+
+    function probeCss() {
+      return Promise.all(CSS_FILES.map(function (f) {
+        return exists(f.path).then(function (status) { return { file: f, status: status }; });
+      })).then(function (results) {
+        var bad = results.filter(function (r) { return r.status !== 'ok'; });
+        var errorPages = results.filter(function (r) { return r.status === 'errorpage'; });
+
+        function list(rows) {
+          return '<ul>' + rows.map(function (r) {
+            return '<li><code>test/' + esc(r.file.path) + '</code> — ' + esc(r.file.note) + '</li>';
+          }).join('') + '</ul>';
+        }
+
+        // The banner only appears when something is wrong; a complete set says nothing.
+        if (errorPages.length) {
+          bannerEl.className = 'banner warn visible';
+          bannerEl.innerHTML = '<strong>Saved HTML error page, not a real asset.</strong>'
+            + 'Re-fetch with <code>test/homey-css/fetch.sh</code>.' + list(errorPages);
+        } else if (bad.length) {
+          bannerEl.className = 'banner warn visible';
+          bannerEl.innerHTML = '<strong>Missing files — the preview will not be accurate.</strong>'
+            + 'Run <code>test/homey-css/fetch.sh</code>.' + list(bad);
+        }
+        log('CSS probe: ' + bad.length + ' of ' + results.length + ' files missing');
+      });
+    }
+
+    // Backed by the app's own live locales/en.json, so preview copy cannot drift from what ships.
+    //
+    // Deliberately does NOT fill in {{placeholders}}, even though Homey.__ is documented as
+    // taking replacement tokens: on a real Homey a pair view gets the raw string back. A stub
+    // that substituted made the calibrate screen look right here while it showed {{seconds}}
+    // on the device. Matching the device is the point; the views fill their own tokens.
+    function translate(key) {
+      var value = key.split('.').reduce(function (node, part) {
+        return node == null ? null : node[part];
+      }, strings);
+      return typeof value === 'string' ? value : key;
+    }
+
+    // Stands in for the driver. `learn` feeds the rx counter the way driver.js does before it
+    // settles; `mark` returns the time actually elapsed since `drive`, which is exactly what
+    // onRepair measures, so the stopwatch and the saved figures agree.
+    function stubScript() {
+      return '<' + 'script>\n'
+        + 'var handlers = {};\n'
+        + 'var driveAt = null;\n'
+        + 'window.Homey = {\n'
+        + '  setTitle: function (t) { document.title = t; },\n'
+        + '  __: function (key) { return window.parent.__previewTranslate(key); },\n'
+        + '  on: function (event, cb) { handlers[event] = cb; },\n'
+        + '  showView: function (id) { window.parent.__previewLog("Homey.showView(" + JSON.stringify(id) + ") — the rest of the flow is Homey\'s own templates"); },\n'
+        + '  done: function () { window.parent.__previewLog("Homey.done()"); return Promise.resolve(); },\n'
+        + '  emit: function (event, data) {\n'
+        + '    window.parent.__previewLog("emit " + event + " " + JSON.stringify(data || {}));\n'
+        + '    var outcome = window.parent.__previewOutcome();\n'
+        + '    if (event === "learn") {\n'
+        + '      return new Promise(function (resolve, reject) {\n'
+        + '        var heard = 0;\n'
+        + '        var timer = setInterval(function () {\n'
+        + '          heard += 1;\n'
+        + '          if (handlers.rx) handlers.rx({ heard: heard, command: "ch3.up" });\n'
+        + '          if (heard < 3) return;\n'
+        + '          clearInterval(timer);\n'
+        + '          if (outcome === "found") resolve();\n'
+        + '          else reject({ message: window.parent.__previewTranslate("pair.timeout") });\n'
+        + '        }, 700);\n'
+        + '      });\n'
+        + '    }\n'
+        + '    if (event === "drive") { driveAt = Date.now(); return delay(250, true); }\n'
+        + '    if (event === "mark") {\n'
+        + '      var elapsed = driveAt === null ? 0 : Date.now() - driveAt;\n'
+        + '      driveAt = null;\n'
+        + '      return delay(250, outcome === "tooshort" ? 400 : elapsed);\n'
+        + '    }\n'
+        + '    if (event === "save") {\n'
+        + '      if (outcome === "tooshort") {\n'
+        + '        return delay(250, null).then(function () {\n'
+        + '          throw { message: window.parent.__previewTranslate("calibrate.too_short") };\n'
+        + '        });\n'
+        + '      }\n'
+        + '      return delay(250, true);\n'
+        + '    }\n'
+        + '    return delay(250, true);\n'
+        + '  }\n'
+        + '};\n'
+        + 'function delay(ms, value) { return new Promise(function (r) { setTimeout(function () { r(value); }, ms); }); }\n'
+        + '<\/' + 'script>\n';
+    }
+
+    function cssLinks() {
+      var links = '<link rel="stylesheet" href="' + abs('homey-css/css/homey.css') + '" />\n'
+                + '<link rel="stylesheet" href="' + abs('homey-css/css/homey.drivers.css') + '" />\n';
+      // Filtering the root inverts its own background too, so _base.css's #fff becomes #000.
+      if (currentTheme === 'dark') links += '<style>html { filter: ' + DARK_FILTER + '; }</style>\n';
+      return links;
+    }
+
+    // #hy-nav is Homey's own, and #hy-nav without .visible is display:none — the state a step
+    // with no `navigation` key gives. The button's label and exact markup are an approximation;
+    // that it is *there* is not, and that is the part worth seeing.
+    function navBar() {
+      var step = currentStep();
+      if (!step || !step.navigation) return '  <div id="hy-nav"></div>\n';
+      // Both classes matter: #hy-nav>button:not(.visible) is display:none !important,
+      // so Homey's own wizard JS marks whichever nav buttons apply, and without it
+      // the button renders into nothing.
+      return '  <div id="hy-nav" class="visible">\n'
+        + '    <button id="hy-nav-continue" class="homey-button-primary-full visible"'
+        + ' onclick="Homey.showView(' + JSON.stringify(step.navigation.next).replace(/"/g, '&quot;') + ')">'
+        + 'Continue</button>\n  </div>\n';
+    }
+
+    // The wizard is its own document; each view is a fragment inside a .hy-view. The view's own
+    // <style> goes after the Homey sheets so its overrides cascade as they do on-device.
+    function buildDocument(viewHtml) {
+      var parsed = new DOMParser().parseFromString(viewHtml, 'text/html');
+      var viewStyle = Array.prototype.map.call(parsed.head.querySelectorAll('style'), function (s) {
+        return s.outerHTML;
+      }).join('\n');
+
+      return '<!DOCTYPE html>\n<html>\n<head>\n<meta charset="utf-8" />\n'
+        + '<meta name="viewport" content="width=device-width, initial-scale=1" />\n'
+        + cssLinks() + stubScript() + viewStyle + '\n</head>\n'
+        // #hy-header and #hy-nav are Homey's own, empty here. #hy-nav without .visible is
+        // display:none — which is the state a step with no "navigation" key gives.
+        + '<body id="hy-wrap">\n  <div id="hy-header"></div>\n  <div id="hy-views">\n'
+        + '    <div class="hy-view visible">\n' + parsed.body.innerHTML + '\n    </div>\n'
+        + '  </div>\n' + navBar() + '</body>\n</html>';
+    }
+
+    function reload() {
+      if (!strings) return;
+      var view = VIEWS[currentView];
+      fetch(view.path, { cache: 'no-store' })
+        .then(function (res) { return res.text(); })
+        .then(function (html) {
+          iframe.srcdoc = buildDocument(html);
+          var step = currentStep();
+          log('reloaded ' + currentView + ' (outcome=' + currentOutcome
+            + ', theme=' + (currentTheme || 'auto')
+            + ", Homey's own Continue: " + (step && step.navigation ? 'yes' : 'no') + ')');
+        });
+    }
+
+    function press(selector, attribute, value) {
+      document.querySelectorAll(selector).forEach(function (btn) {
+        btn.setAttribute('aria-pressed', String(btn.getAttribute(attribute) === value));
+      });
+    }
+
+    function applyView(id) {
+      currentView = id;
+      press('.view-btn', 'data-view', id);
+
+      // Each view has its own idea of what the driver might do, so the outcome buttons are rebuilt.
+      outcomeButtons.innerHTML = '';
+      VIEWS[id].outcomes.forEach(function (outcome) {
+        var btn = document.createElement('button');
+        btn.className = 'outcome-btn';
+        btn.setAttribute('data-outcome', outcome.id);
+        btn.textContent = outcome.label;
+        btn.addEventListener('click', function () { applyOutcome(outcome.id); reload(); });
+        outcomeButtons.appendChild(btn);
+      });
+      applyOutcome(VIEWS[id].outcomes[0].id);
+      reload();
+    }
+
+    function applyOutcome(id) {
+      currentOutcome = id;
+      press('.outcome-btn', 'data-outcome', id);
+    }
+
+    function applyTheme(theme) {
+      currentTheme = theme;
+      if (theme) document.documentElement.setAttribute('data-theme', theme);
+      else document.documentElement.removeAttribute('data-theme');
+      press('.theme-btn', 'data-theme', theme);
+      reload();
+    }
+
+    window.__previewTranslate = translate;
+    window.__previewLog = log;
+    window.__previewOutcome = function () { return currentOutcome; };
+
+    document.querySelectorAll('.view-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () { applyView(btn.getAttribute('data-view')); });
+    });
+    document.querySelectorAll('.theme-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () { applyTheme(btn.getAttribute('data-theme')); });
+    });
+    document.getElementById('reload').addEventListener('click', reload);
+
+    Promise.all([
+      fetch('../locales/en.json', { cache: 'no-store' }).then(function (res) { return res.json(); }),
+      fetch('../drivers/blind/driver.compose.json', { cache: 'no-store' }).then(function (res) { return res.json(); }),
+      probeCss()
+    ]).then(function (results) {
+      strings = results[0];
+      manifest = results[1];
+      currentTheme = '';
+      applyView('learn');
+    });
+  </script>
+</body>
+</html>

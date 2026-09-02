@@ -11,6 +11,30 @@
     "failed": "Je afstandsbediening is niet gevonden",
     "timeout": "Homey hoorde geen druk op een Bear-afstandsbediening. Houd de afstandsbediening dichter bij Homey en probeer het opnieuw.",
     "retry": "Opnieuw proberen",
-    "channel": "Kanaal"
+    "channel": "Kanaal",
+    "found_hint": "Kies hierna de kanalen die je echt gebruikt. Zijn ze toegevoegd, kalibreer dan elk apparaat: open het in Homey en kies Instellingen → Onderhoud → Probeer te repareren. Zolang een zonwering niet geklokt is, kan Homey hem wel omhoog en omlaag sturen, maar niet op een stand houden.",
+    "not_learned": "Homey kent je afstandsbediening nog niet. Ga terug en druk op een knop van de afstandsbediening."
+  },
+  "calibrate": {
+    "title": "Kalibreren",
+    "intro": "Kalibreer deze zonwering",
+    "intro_hint": "Homey kan niet zien waar de zonwering staat; hij kan hem alleen klokken. Daarom loopt de zonwering hier van eind tot eind: eerst helemaal dicht, dan helemaal open, dan weer helemaal dicht. Tik op de knop op het moment dat hij een uiteinde bereikt. Blijf waar je hem kunt zien.",
+    "start": "Starten",
+    "prepare": "Zonwering sluiten",
+    "prepare_hint": "Hij loopt helemaal omlaag, zodat de meting begint bij een uiteinde dat Homey kent. Tik zodra hij stilstaat.",
+    "at_bottom": "Helemaal dicht",
+    "opening": "Openen wordt geklokt",
+    "opening_hint": "Tik op het moment dat de zonwering bovenaan is en stilstaat.",
+    "at_top": "Helemaal open",
+    "closing": "Sluiten wordt geklokt",
+    "closing_hint": "Tik op het moment dat de zonwering onderaan is en stilstaat.",
+    "measured": "Opent in {{up}}s, sluit in {{down}}s",
+    "done": "Gekalibreerd",
+    "done_hint": "Homey kent nu de looptijden van deze zonwering, en weet dat hij op dit moment helemaal dicht is.",
+    "finish": "Klaar",
+    "failed": "Kalibreren is niet afgerond",
+    "retry": "Opnieuw beginnen",
+    "too_short": "Die rit duurde korter dan een seconde. Begin opnieuw en tik pas als de zonwering het uiteinde echt bereikt heeft.",
+    "stopwatch": "{{seconds}}s"
   }
 }

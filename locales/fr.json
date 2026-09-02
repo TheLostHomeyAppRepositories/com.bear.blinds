@@ -11,6 +11,30 @@
     "failed": "Votre télécommande est introuvable",
     "timeout": "Homey n'a entendu aucun appui sur une télécommande Bear. Rapprochez la télécommande de Homey et réessayez.",
     "retry": "Réessayer",
-    "channel": "Canal"
+    "channel": "Canal",
+    "found_hint": "Choisissez ensuite les canaux que vous utilisez réellement. Une fois ajoutés, calibrez chacun d'eux : ouvrez-le dans Homey et choisissez Réglages → Maintenance → Essayer de réparer. Tant que la course d'un store n'a pas été chronométrée, Homey peut le monter et le descendre, mais pas le maintenir à une position.",
+    "not_learned": "Homey ne connaît pas encore votre télécommande. Revenez en arrière et appuyez sur une touche de la télécommande."
+  },
+  "calibrate": {
+    "title": "Calibrer",
+    "intro": "Calibrer ce store",
+    "intro_hint": "Homey ne peut pas voir où se trouve le store ; il ne peut que le chronométrer. C'est pourquoi le store va ici d'une extrémité à l'autre : d'abord complètement fermé, puis complètement ouvert, puis de nouveau complètement fermé. Touchez le bouton au moment précis où il atteint une extrémité. Restez là où vous pouvez le voir.",
+    "start": "Démarrer",
+    "prepare": "Fermeture du store",
+    "prepare_hint": "Il descend complètement, pour que la mesure parte d'une extrémité connue de Homey. Touchez dès qu'il s'arrête.",
+    "at_bottom": "Complètement fermé",
+    "opening": "Chronométrage de l'ouverture",
+    "opening_hint": "Touchez au moment où le store arrive en haut et s'arrête.",
+    "at_top": "Complètement ouvert",
+    "closing": "Chronométrage de la fermeture",
+    "closing_hint": "Touchez au moment où le store arrive en bas et s'arrête.",
+    "measured": "Ouvre en {{up}} s, ferme en {{down}} s",
+    "done": "Calibré",
+    "done_hint": "Homey connaît maintenant les temps de course de ce store et sait qu'il est actuellement complètement fermé.",
+    "finish": "Terminé",
+    "failed": "Le calibrage n'est pas allé au bout",
+    "retry": "Recommencer",
+    "too_short": "Cette course a duré moins d'une seconde. Recommencez et ne touchez que lorsque le store a réellement atteint l'extrémité.",
+    "stopwatch": "{{seconds}} s"
   }
 }

@@ -1,3 +1,5 @@
 Jalousien und Markisen fahren nur, wenn jemand zur Fernbedienung greift. Diese App holt sie in Homey, damit der Sonnenschutz ausfährt, sobald die Sonne die Terrasse erreicht, wieder einfährt, bevor der Wind auffrischt, und abends von selbst schließt.
 
 Homey lernt deine eigene Fernbedienung, sobald du eine Jalousie hinzufügst, und spricht so nur mit deinen und nie mit denen der Nachbarn. Jeder der fünf Kanäle wird zu einem eigenen Gerät, und Homey hört auch danach weiter mit: Bedient jemand den Sonnenschutz von Hand, bekommt Homey das mit und bleibt aktuell, statt einen veralteten Stand anzuzeigen.
+
+Jalousien lassen sich auch auf eine Position stellen, etwa halb offen. Die Motoren melden nichts zurück, daher ermittelt Homey die Position, indem er ihre Laufzeit misst: eine Schätzung und kein Messwert, die sich korrigiert, sobald eine Jalousie ganz auf oder ganz zu fährt, was Homey von selbst tut, wenn die Schätzung weggelaufen ist. Miss jede Jalousie zuerst einmal in ihren Einstellungen ein.

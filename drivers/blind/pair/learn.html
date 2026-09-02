@@ -74,70 +74,82 @@
     <p class="bear-hint" id="hint"></p>
     <p class="bear-status" id="status"></p>
 
-    <button class="homey-button-primary-full" id="retry" style="margin-top: 24px; display: none;"></button>
+    <button class="homey-button-primary-full" id="action" style="margin-top: 24px; display: none;"></button>
 </div>
 
 <script type="application/javascript">
     var container = document.getElementById('container');
     var message = document.getElementById('message');
     var hint = document.getElementById('hint');
-    var status = document.getElementById('status');
-    var retry = document.getElementById('retry');
+    // Not `status`: window.status is a legacy string property, and a top-level
+    // `var status = <element>` assigns to it and coerces the element to
+    // "[object HTMLParagraphElement]". Every write then goes quietly nowhere and
+    // classList is undefined — with no error until something reads it back.
+    var statusLine = document.getElementById('status');
+    var action = document.getElementById('action');
 
     var listening = false;
+    // Only ever retries. Moving on is Homey's own Continue button, in the nav bar
+    // this step asks for with its `navigation` key. Null whenever the button is
+    // hidden, which is every state but the failed one.
+    var onAction = null;
 
     Homey.setTitle(Homey.__('pair.title'));
-    retry.textContent = Homey.__('pair.retry');
 
-    function setState(state, messageText, hintText) {
+    function setState(state, messageText, hintText, buttonKey) {
         container.className = 'bear-learn is-' + state;
         message.textContent = messageText;
         hint.textContent = hintText || '';
+
+        var showButton = Boolean(buttonKey);
+        if (showButton) action.textContent = Homey.__('pair.' + buttonKey);
 
         // Set visibility inline. Homey's own stylesheet matches this button with
         // [class*='homey-button'][class*='-full'], which is specificity (0,2,0)
         // and beats any single class of ours no matter the source order — only
         // an inline style reliably wins.
-        var showRetry = (state === 'error');
-        retry.style.display = showRetry ? 'inline-grid' : 'none';
-        retry.disabled = !showRetry;
+        action.style.display = showButton ? 'inline-grid' : 'none';
+        action.disabled = !showButton;
         // Homey styles disabled buttons via [disabled='disabled'] and .is-disabled.
         // A JS-set .disabled reflects as disabled="" and matches neither, so the
         // class is what actually greys the button out.
-        retry.classList.toggle('is-disabled', !showRetry);
+        action.classList.toggle('is-disabled', !showButton);
     }
 
     // Live feedback from the driver about what Homey is actually receiving,
     // so a silent failure is distinguishable from an unrecognised remote.
     Homey.on('rx', function (data) {
         if (!data || !listening) return;
-        status.textContent = Homey.__('pair.heard') + ' ' + data.heard +
+        statusLine.textContent = Homey.__('pair.heard') + ' ' + data.heard +
             (data.command ? ' (' + data.command + ')' : '');
     });
 
     function learn() {
         listening = true;
-        status.textContent = '';
+        onAction = null;
+        statusLine.textContent = '';
         setState('listening', Homey.__('pair.listening'), Homey.__('pair.listening_hint'));
 
         Homey.emit('learn')
             .then(function () {
                 listening = false;
-                setState('found', Homey.__('pair.found'), '');
-                // Brief pause so the success state is actually readable.
-                setTimeout(function () {
-                    Homey.showView('list_devices');
-                }, 900);
+                // Nothing of ours to press: Homey's Continue is already under the
+                // view and goes to the channel list. Waiting for it rather than
+                // advancing on a timer is what keeps this hint readable, and it is
+                // the button people already know from every other pairing wizard.
+                onAction = null;
+                setState('found', Homey.__('pair.found'), Homey.__('pair.found_hint'));
             })
             .catch(function (err) {
                 listening = false;
-                setState('error', Homey.__('pair.failed'), (err && err.message) || '');
+                onAction = learn;
+                setState('error', Homey.__('pair.failed'), (err && err.message) || '', 'retry');
             });
     }
 
-    retry.addEventListener('click', function () {
-        if (listening) return;
-        learn();
+    action.addEventListener('click', function () {
+        if (listening || onAction === null) return;
+        onAction();
     });
 
     learn();

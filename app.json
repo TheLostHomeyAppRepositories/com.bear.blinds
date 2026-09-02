@@ -1,7 +1,7 @@
 {
   "_comment": "This file is generated. Please edit .homeycompose/app.json instead.",
   "id": "com.bear.blinds",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "compatibility": ">=5.0.0",
   "sdk": 3,
   "platforms": [
@@ -92,6 +92,62 @@
   },
   "support": "https://github.com/jbothe/homey-bear-blind-automation/issues",
   "source": "https://github.com/jbothe/homey-bear-blind-automation",
+  "flow": {
+    "actions": [
+      {
+        "id": "recalibrate",
+        "title": {
+          "en": "Recalibrate the position",
+          "nl": "Kalibreer de positie",
+          "de": "Position kalibrieren",
+          "fr": "Recalibrer la position"
+        },
+        "titleFormatted": {
+          "en": "Recalibrate the position: run [[end]]",
+          "nl": "Kalibreer de positie: loop [[end]]",
+          "de": "Position kalibrieren: fahre [[end]]",
+          "fr": "Recalibrer la position : aller [[end]]"
+        },
+        "hint": {
+          "en": "Runs the blind into one of its end stops and takes the position from there. The blind reports nothing back, so a position Homey has only calculated drifts over a run of partial moves; this is how it is put right.",
+          "nl": "Laat de zonwering tegen een eindaanslag lopen en neemt de positie daarvandaan. De zonwering meldt niets terug, dus een positie die Homey alleen berekend heeft loopt na een reeks deelbewegingen weg; hiermee wordt dat rechtgezet.",
+          "de": "Fährt die Jalousie in einen ihrer Endanschläge und übernimmt die Position von dort. Die Jalousie meldet nichts zurück, daher läuft eine nur berechnete Position nach mehreren Teilfahrten weg; damit wird sie korrigiert.",
+          "fr": "Fait rouler le store jusqu'à l'une de ses butées et en déduit la position. Le store ne renvoie aucune information : une position seulement calculée dérive au fil des mouvements partiels, et c'est ainsi qu'on la corrige."
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=blind"
+          },
+          {
+            "name": "end",
+            "type": "dropdown",
+            "values": [
+              {
+                "id": "open",
+                "label": {
+                  "en": "fully open",
+                  "nl": "helemaal open",
+                  "de": "ganz auf",
+                  "fr": "complètement ouvert"
+                }
+              },
+              {
+                "id": "closed",
+                "label": {
+                  "en": "fully closed",
+                  "nl": "helemaal dicht",
+                  "de": "ganz zu",
+                  "fr": "complètement fermé"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
   "drivers": [
     {
       "id": "blind",
@@ -116,30 +172,117 @@
         "satelliteMode": true
       },
       "capabilities": [
-        "windowcoverings_state"
+        "windowcoverings_state",
+        "windowcoverings_set"
       ],
       "settings": [
         {
-          "id": "travel_time",
-          "type": "number",
+          "type": "group",
           "label": {
-            "en": "Travel time",
+            "en": "Travel",
             "nl": "Looptijd",
             "de": "Laufzeit",
-            "fr": "Temps de course"
+            "fr": "Course"
           },
-          "hint": {
-            "en": "How long this blind takes to travel from one end to the other. The blind sends no feedback, so Homey uses this to know when to stop showing it as moving.",
-            "nl": "Hoelang deze zonwering erover doet van boven naar beneden. De zonwering stuurt niets terug, dus Homey gebruikt dit om te weten wanneer hij niet langer als bewegend getoond wordt.",
-            "de": "Wie lange diese Jalousie von einem Ende zum anderen braucht. Die Jalousie meldet nichts zurück, daher weiß Homey darüber, wann sie nicht mehr als fahrend angezeigt wird.",
-            "fr": "Temps que met ce store pour aller d'une extrémité à l'autre. Le store ne renvoie aucune information, Homey s'en sert donc pour savoir quand cesser de l'afficher en mouvement."
+          "children": [
+            {
+              "id": "travel_time_up",
+              "type": "number",
+              "label": {
+                "en": "Time to open",
+                "nl": "Tijd naar open",
+                "de": "Zeit zum Öffnen",
+                "fr": "Temps pour ouvrir"
+              },
+              "hint": {
+                "en": "How long this blind takes to run from fully closed to fully open. Homey has no other way to know where the blind is, so it times every move against this. Rather than guessing at it, let Homey measure it for you: Settings → Maintenance → Try to Repair.",
+                "nl": "Hoelang deze zonwering erover doet van helemaal dicht naar helemaal open. Homey weet niet anders waar de zonwering staat en klokt elke beweging hierop af. Schat het niet, maar laat Homey het voor je meten: Instellingen → Onderhoud → Probeer te repareren.",
+                "de": "Wie lange diese Jalousie von ganz geschlossen bis ganz geöffnet braucht. Homey weiß sonst nicht, wo die Jalousie steht, und misst jede Fahrt daran. Schätze den Wert nicht, sondern lass ihn von Homey messen: Einstellungen → Wartung → Reparatur versuchen.",
+                "fr": "Temps que met ce store pour passer de complètement fermé à complètement ouvert. Homey n'a aucun autre moyen de savoir où se trouve le store et chronomètre chaque mouvement sur cette base. Plutôt que de l'estimer, laissez Homey le mesurer pour vous : Réglages → Maintenance → Essayer de réparer."
+              },
+              "value": 30,
+              "min": 1,
+              "max": 300,
+              "step": 0.5,
+              "units": {
+                "en": "s"
+              }
+            },
+            {
+              "id": "travel_time_down",
+              "type": "number",
+              "label": {
+                "en": "Time to close",
+                "nl": "Tijd naar dicht",
+                "de": "Zeit zum Schließen",
+                "fr": "Temps pour fermer"
+              },
+              "hint": {
+                "en": "How long this blind takes to run from fully open to fully closed. Most motors are not the same speed both ways, because gravity helps one direction and fights the other, so this is timed separately. Rather than guessing at it, let Homey measure it for you: Settings → Maintenance → Try to Repair.",
+                "nl": "Hoelang deze zonwering erover doet van helemaal open naar helemaal dicht. De meeste motoren lopen niet beide kanten op even snel, omdat de zwaartekracht de ene richting helpt en de andere tegenwerkt, dus dit wordt apart geklokt. Schat het niet, maar laat Homey het voor je meten: Instellingen → Onderhoud → Probeer te repareren.",
+                "de": "Wie lange diese Jalousie von ganz geöffnet bis ganz geschlossen braucht. Die meisten Motoren sind nicht in beide Richtungen gleich schnell, weil die Schwerkraft der einen hilft und der anderen entgegenwirkt, daher wird diese Zeit getrennt gemessen. Schätze den Wert nicht, sondern lass ihn von Homey messen: Einstellungen → Wartung → Reparatur versuchen.",
+                "fr": "Temps que met ce store pour passer de complètement ouvert à complètement fermé. La plupart des moteurs ne vont pas à la même vitesse dans les deux sens, car la gravité aide dans un sens et freine dans l'autre : cette durée est donc chronométrée séparément. Plutôt que de l'estimer, laissez Homey la mesurer pour vous : Réglages → Maintenance → Essayer de réparer."
+              },
+              "value": 30,
+              "min": 1,
+              "max": 300,
+              "step": 0.5,
+              "units": {
+                "en": "s"
+              }
+            },
+            {
+              "id": "stop_lead",
+              "type": "number",
+              "label": {
+                "en": "Stop sent early by",
+                "nl": "Stopcommando eerder verzonden",
+                "de": "Stopp-Befehl früher senden um",
+                "fr": "Arrêt envoyé en avance de"
+              },
+              "hint": {
+                "en": "How far ahead of the calculated moment Homey sends STOP, to cover the delay between handing the command to the radio and the motor acting on it. Raise it if the blind consistently runs past the position you asked for, lower it if it stops short. Calibrating under Settings → Maintenance → Try to Repair does not measure this one, so set it here once the travel times are right.",
+                "nl": "Hoeveel eerder dan het berekende moment Homey STOP stuurt, om de vertraging op te vangen tussen het aanbieden van het commando aan de zender en het reageren van de motor. Verhoog dit als de zonwering steeds voorbij de gevraagde positie loopt, verlaag het als hij te vroeg stopt. Kalibreren via Instellingen → Onderhoud → Probeer te repareren meet deze waarde niet, dus stel hem hier in zodra de looptijden kloppen.",
+                "de": "Wie viel früher als berechnet Homey den STOPP-Befehl sendet, um die Verzögerung zwischen der Übergabe an den Sender und der Reaktion des Motors auszugleichen. Erhöhe den Wert, wenn die Jalousie regelmäßig über die gewünschte Position hinausfährt, verringere ihn, wenn sie zu früh anhält. Die Kalibrierung unter Einstellungen → Wartung → Reparatur versuchen misst diesen Wert nicht, stelle ihn also hier ein, sobald die Laufzeiten stimmen.",
+                "fr": "Combien de temps avant le moment calculé Homey envoie l'ordre d'ARRÊT, pour compenser le délai entre la remise de la commande à l'émetteur et la réaction du moteur. Augmentez cette valeur si le store dépasse systématiquement la position demandée, diminuez-la s'il s'arrête trop tôt. Le calibrage sous Réglages → Maintenance → Essayer de réparer ne mesure pas cette valeur : réglez-la ici une fois les temps de course corrects."
+              },
+              "value": 300,
+              "min": 0,
+              "max": 3000,
+              "step": 50,
+              "units": {
+                "en": "ms"
+              }
+            }
+          ]
+        },
+        {
+          "type": "group",
+          "label": {
+            "en": "Position",
+            "nl": "Positie",
+            "de": "Position",
+            "fr": "Position"
           },
-          "value": 30,
-          "min": 1,
-          "max": 300,
-          "units": {
-            "en": "s"
-          }
+          "children": [
+            {
+              "id": "invert_position",
+              "type": "checkbox",
+              "label": {
+                "en": "Invert the position",
+                "nl": "Positie omkeren",
+                "de": "Position umkehren",
+                "fr": "Inverser la position"
+              },
+              "hint": {
+                "en": "Normally 100% means fully open: a blind raised, an awning rolled in. Turn this on if you would rather read 100% as fully out, with the shade at its largest. The up and down buttons are unaffected either way, because a direction cannot be read backwards. This is a preference rather than a measurement, so calibrating under Settings → Maintenance → Try to Repair leaves it alone.",
+                "nl": "Normaal betekent 100% helemaal open: een zonwering omhoog, een screen ingerold. Zet dit aan als je 100% liever leest als helemaal uit, met de schaduw op z'n grootst. De omhoog- en omlaagknoppen veranderen hier niet van, want een richting kun je niet omdraaien. Dit is een voorkeur en geen meting, dus kalibreren via Instellingen → Onderhoud → Probeer te repareren laat hem ongemoeid.",
+                "de": "Normalerweise bedeutet 100 % ganz geöffnet: Jalousie oben, Markise eingefahren. Aktiviere dies, wenn du 100 % lieber als ganz ausgefahren liest, mit dem größten Schattenwurf. Die Auf- und Ab-Tasten ändern sich dadurch nicht, denn eine Richtung lässt sich nicht umkehren. Das ist eine Vorliebe und keine Messung, daher lässt die Kalibrierung unter Einstellungen → Wartung → Reparatur versuchen sie unberührt.",
+                "fr": "Normalement, 100 % signifie complètement ouvert : store relevé, banne repliée. Activez cette option si vous préférez lire 100 % comme complètement déployé, l'ombre à son maximum. Les boutons montée et descente ne changent pas pour autant, car un sens ne s'inverse pas. Il s'agit d'une préférence et non d'une mesure : le calibrage sous Réglages → Maintenance → Essayer de réparer n'y touche pas."
+              },
+              "value": false
+            }
+          ]
         }
       ],
       "pair": [
@@ -159,6 +302,11 @@
         {
           "id": "add_my_devices",
           "template": "add_devices"
+        }
+      ],
+      "repair": [
+        {
+          "id": "calibrate"
         }
       ]
     }

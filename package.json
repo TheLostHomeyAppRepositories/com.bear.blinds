@@ -1,6 +1,6 @@
 {
   "name": "com.bear.blinds",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Blinds and awnings driven by a Bear 5-channel 433 MHz remote.",
   "main": "app.js",
   "license": "GPL-3.0",

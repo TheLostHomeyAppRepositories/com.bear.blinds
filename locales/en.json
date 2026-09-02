@@ -11,6 +11,30 @@
     "failed": "Couldn't find your remote",
     "timeout": "Homey didn't hear a press from a Bear remote. Move the remote closer to Homey and try again.",
     "retry": "Try again",
-    "channel": "Channel"
+    "channel": "Channel",
+    "found_hint": "Next, pick the channels you actually use. Once they are added, calibrate each one: open it in Homey and choose Settings → Maintenance → Try to Repair. Until a blind has been timed, Homey can send it up and down but cannot hold it at a position.",
+    "not_learned": "Homey hasn't learned your remote yet. Go back and press a button on the remote."
+  },
+  "calibrate": {
+    "title": "Calibrate",
+    "intro": "Calibrate this blind",
+    "intro_hint": "Homey has no way to see where the blind is; it can only time it. So this runs the blind from end to end: first fully closed, then fully open, then fully closed again. Tap the button the moment it reaches each end. Stay where you can watch it.",
+    "start": "Start",
+    "prepare": "Closing the blind",
+    "prepare_hint": "Running it all the way down, so the timing starts from an end Homey knows. Tap once it has stopped.",
+    "at_bottom": "It's fully closed",
+    "opening": "Timing the opening run",
+    "opening_hint": "Tap the moment the blind reaches the top and stops.",
+    "at_top": "It's fully open",
+    "closing": "Timing the closing run",
+    "closing_hint": "Tap the moment the blind reaches the bottom and stops.",
+    "measured": "Opens in {{up}}s, closes in {{down}}s",
+    "done": "Calibrated",
+    "done_hint": "Homey has this blind's travel times, and knows it is fully closed right now.",
+    "finish": "Done",
+    "failed": "Calibration didn't finish",
+    "retry": "Start again",
+    "too_short": "That run was under a second. Start again, and tap only once the blind has actually reached the end.",
+    "stopwatch": "{{seconds}}s"
   }
 }

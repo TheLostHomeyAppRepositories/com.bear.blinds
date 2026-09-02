@@ -1,0 +1,284 @@
+<style>
+    .bear-calibrate {
+        /* Homey absolutely positions .hy-view to fill the pane, so this needs a
+           height of its own before justify-content can centre anything. */
+        min-height: 100%;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: var(--homey-su-4) var(--homey-su-3);
+    }
+
+    .bear-blind {
+        width: 96px;
+        height: 96px;
+        margin-bottom: 24px;
+    }
+
+    .bear-blind rect {
+        fill: #2D2C2C;
+    }
+
+    .bear-calibrate.is-running .bear-slat {
+        animation: bear-fade 1.4s ease-in-out infinite;
+    }
+
+    /* Each slat starts a beat after its neighbour, so the fade travels along the
+       blind as a wave rather than blinking all at once — and which end the wave
+       starts from is which way the blind is going. Closing leads from the top
+       slat down; opening leads from the bottom slat up. Every running step names
+       a direction; one that did not would simply blink.
+
+       The rects are children 2-5: child 1 is the headrail, which does not move. */
+    .bear-calibrate.is-closing .bear-slat:nth-child(2) { animation-delay: 0.12s; }
+    .bear-calibrate.is-closing .bear-slat:nth-child(3) { animation-delay: 0.24s; }
+    .bear-calibrate.is-closing .bear-slat:nth-child(4) { animation-delay: 0.36s; }
+    .bear-calibrate.is-closing .bear-slat:nth-child(5) { animation-delay: 0.48s; }
+
+    .bear-calibrate.is-opening .bear-slat:nth-child(2) { animation-delay: 0.48s; }
+    .bear-calibrate.is-opening .bear-slat:nth-child(3) { animation-delay: 0.36s; }
+    .bear-calibrate.is-opening .bear-slat:nth-child(4) { animation-delay: 0.24s; }
+    .bear-calibrate.is-opening .bear-slat:nth-child(5) { animation-delay: 0.12s; }
+
+    @keyframes bear-fade {
+        0%, 100% { opacity: 1; }
+        50%      { opacity: 0.25; }
+    }
+
+    .bear-message {
+        font-size: var(--homey-font-size-default);
+        font-weight: var(--homey-font-weight-medium);
+        color: var(--homey-color-text);
+        margin: 0 0 var(--homey-su-1);
+    }
+
+    .bear-hint {
+        font-size: var(--homey-font-size-small);
+        color: var(--homey-color-text-light);
+        margin: 0;
+        max-width: 320px;
+    }
+
+    .bear-status {
+        font-size: var(--homey-font-size-small);
+        color: var(--homey-color-text-light);
+        opacity: 0.7;
+        margin: var(--homey-su-2) 0 0;
+        /* Tall enough for the stopwatch, so the panel does not shuffle upwards
+           every time a run ends. */
+        min-height: 30px;
+    }
+
+    /* The run this screen is measuring, counting up. Homey has no font-size
+       token this large, hence the literal — the same way the blind above is
+       sized in pixels. */
+    .bear-status.is-stopwatch {
+        font-size: 22px;
+        font-weight: var(--homey-font-weight-medium);
+        color: var(--homey-color-text);
+        opacity: 1;
+        /* Digits of equal width, or the line twitches on every tick. */
+        font-variant-numeric: tabular-nums;
+    }
+</style>
+
+<div class="bear-calibrate is-idle" id="container">
+    <svg class="bear-blind" viewBox="0 0 96 96" xmlns="http://www.w3.org/2000/svg">
+        <rect x="8" y="10" width="80" height="8" rx="3"/>
+        <rect class="bear-slat" x="12" y="26" width="72" height="9" rx="3"/>
+        <rect class="bear-slat" x="12" y="41" width="72" height="9" rx="3"/>
+        <rect class="bear-slat" x="12" y="56" width="72" height="9" rx="3"/>
+        <rect class="bear-slat" x="12" y="71" width="72" height="9" rx="3"/>
+    </svg>
+
+    <p class="bear-message" id="message"></p>
+    <p class="bear-hint" id="hint"></p>
+    <p class="bear-status" id="status"></p>
+
+    <button class="homey-button-primary-full" id="action" style="margin-top: 24px;"></button>
+</div>
+
+<script type="application/javascript">
+    var container = document.getElementById('container');
+    var message = document.getElementById('message');
+    var hint = document.getElementById('hint');
+    // Not `status`: window.status is a legacy string property, and a top-level
+    // `var status = <element>` assigns to it and coerces the element to
+    // "[object HTMLParagraphElement]". Every write then goes quietly nowhere and
+    // classList is undefined — with no error until something reads it back.
+    var statusLine = document.getElementById('status');
+    var action = document.getElementById('action');
+
+    // The wizard measures what Homey cannot: how long this motor takes to run
+    // each way. There is no sensor on the blind, so the person watching it is
+    // the sensor, and every step is a run they end by tapping the button.
+    // `direction` is which way the blind is travelling, and drives the animation
+    // so the drawing agrees with the motor. `timed` marks the two runs that are
+    // actually being measured.
+    var STEPS = {
+        intro:   { state: 'idle',    key: 'intro',   button: 'start' },
+        prepare: { state: 'running', key: 'prepare', button: 'at_bottom', direction: 'closing' },
+        opening: { state: 'running', key: 'opening', button: 'at_top',    direction: 'opening', timed: true },
+        closing: { state: 'running', key: 'closing', button: 'at_bottom', direction: 'closing', timed: true },
+        done:    { state: 'done',    key: 'done',    button: 'finish' }
+    };
+
+    var step = 'intro';
+    var busy = false;
+    var upTime = null;
+    var downTime = null;
+
+    // The stopwatch on screen is only for the person watching the blind. The
+    // measurement itself is the driver's, taken from the moment it handed the
+    // command to the radio, and this cannot see that moment — it starts when
+    // the emit that carried the command comes back.
+    var stopwatch = null;
+    var stopwatchFrom = 0;
+
+    Homey.setTitle(Homey.__('calibrate.title'));
+
+    // Homey.__ is documented as taking replacement tokens, but the copy comes back
+    // with its {{placeholders}} intact in a pair view on a real Homey. Filling them
+    // in here works either way: if a future Homey does substitute, there is nothing
+    // left for this to find.
+    function text(key, tokens) {
+        var value = Homey.__('calibrate.' + key);
+        Object.keys(tokens || {}).forEach(function (name) {
+            value = value.split('{{' + name + '}}').join(tokens[name]);
+        });
+        return value;
+    }
+
+    function show(name) {
+        var current = STEPS[name];
+        container.className = 'bear-calibrate is-' + current.state
+            + (current.direction ? ' is-' + current.direction : '');
+        message.textContent = Homey.__('calibrate.' + current.key);
+        hint.textContent = Homey.__('calibrate.' + current.key + '_hint');
+
+        if (current.timed) {
+            startStopwatch();
+        } else {
+            clearStopwatch();
+            statusLine.textContent = upTime === null ? '' : text('measured', {
+                up: seconds(upTime),
+                down: downTime === null ? '…' : seconds(downTime)
+            });
+        }
+
+        setButton(current.button);
+    }
+
+    function fail(err) {
+        clearStopwatch();
+        container.className = 'bear-calibrate is-error';
+        message.textContent = Homey.__('calibrate.failed');
+        hint.textContent = (err && err.message) || '';
+        step = 'intro';
+        upTime = null;
+        downTime = null;
+        statusLine.textContent = '';
+        setButton('retry');
+    }
+
+    function startStopwatch() {
+        pauseStopwatch();
+        stopwatchFrom = Date.now();
+        statusLine.classList.add('is-stopwatch');
+        tickStopwatch();
+        stopwatch = setInterval(tickStopwatch, 100);
+    }
+
+    function tickStopwatch() {
+        statusLine.textContent = text('stopwatch', {
+            seconds: seconds(Date.now() - stopwatchFrom)
+        });
+    }
+
+    // Stops it counting but leaves the figure standing, so the run the button
+    // just ended stays readable while the next command goes out.
+    function pauseStopwatch() {
+        if (stopwatch === null) return;
+        clearInterval(stopwatch);
+        stopwatch = null;
+    }
+
+    function clearStopwatch() {
+        pauseStopwatch();
+        statusLine.classList.remove('is-stopwatch');
+    }
+
+    function setButton(key) {
+        action.textContent = Homey.__('calibrate.' + key);
+        action.disabled = false;
+        // Homey styles disabled buttons via [disabled='disabled'] and
+        // .is-disabled. A JS-set .disabled reflects as disabled="" and matches
+        // neither, so the class is what actually greys the button out.
+        action.classList.remove('is-disabled');
+    }
+
+    function seconds(ms) {
+        return (Math.round(ms / 100) / 10).toFixed(1);
+    }
+
+    // Each of these ends the run that is going and starts the next one. The
+    // elapsed time comes back from the driver, which holds the clock: the view
+    // could be a phone on a slow connection, and the round trip would land in
+    // the measurement.
+    function perform() {
+        if (step === 'intro') {
+            return Homey.emit('drive', { direction: 'down' }).then(function () { return 'prepare'; });
+        }
+        if (step === 'prepare') {
+            // This run only gets the blind to an end Homey knows; it is not timed.
+            return Homey.emit('mark')
+                .then(function () { return Homey.emit('drive', { direction: 'up' }); })
+                .then(function () { return 'opening'; });
+        }
+        if (step === 'opening') {
+            return Homey.emit('mark')
+                .then(function (elapsed) {
+                    upTime = elapsed;
+                    return Homey.emit('drive', { direction: 'down' });
+                })
+                .then(function () { return 'closing'; });
+        }
+        if (step === 'closing') {
+            return Homey.emit('mark')
+                .then(function (elapsed) {
+                    downTime = elapsed;
+                    return Homey.emit('save', { upTime: upTime, downTime: downTime });
+                })
+                .then(function () { return 'done'; });
+        }
+        return Homey.done();
+    }
+
+    action.addEventListener('click', function () {
+        if (busy) return;
+        busy = true;
+        // The run ended when the button was pressed, not when the driver gets
+        // round to answering, so the count stops here.
+        pauseStopwatch();
+        action.disabled = true;
+        action.classList.add('is-disabled');
+
+        Promise.resolve()
+            .then(perform)
+            .then(function (next) {
+                busy = false;
+                if (!next) return;
+                step = next;
+                show(step);
+            })
+            .catch(function (err) {
+                busy = false;
+                fail(err);
+            });
+    });
+
+    show(step);
+</script>
