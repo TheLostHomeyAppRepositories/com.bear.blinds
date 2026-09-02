@@ -89,14 +89,18 @@ class BearBlindDevice extends Homey.Device {
         const state = COMMAND_TO_STATE[frame.command];
         if (state === undefined) return;
 
-        // setCapabilityValue, not triggerCapabilityListener: this reflects a
-        // press that already happened, and must not transmit it back.
-        this.setCapabilityValue('windowcoverings_state', state)
-            .catch(err => this.error(`${this.ch()} could not set state:`, err.message));
-        this.scheduleIdle(state);
+        const from = `${this.ch()} rx ${frame.command} from the remote`
+            + (frame.channel === CHANNEL_ALL ? ' (ALL)' : '');
 
-        this.log(`${this.ch()} rx ${frame.command} from the remote`
-            + (frame.channel === CHANNEL_ALL ? ' (ALL)' : ''));
+        // setCapabilityValue, not triggerCapabilityListener: this reflects a
+        // press that already happened, and must not transmit it back. The value
+        // is read back and logged because a rejection here is otherwise
+        // invisible — the device keeps working, and only the UI goes stale.
+        this.setCapabilityValue('windowcoverings_state', state)
+            .then(() => this.log(`${from}; state now ${this.getCapabilityValue('windowcoverings_state')}`))
+            .catch(err => this.error(`${from}; could not set state to ${state}:`, err.message));
+
+        this.scheduleIdle(state);
     }
 
     async onCapabilityState(value) {
