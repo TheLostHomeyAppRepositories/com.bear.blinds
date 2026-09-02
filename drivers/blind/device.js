@@ -40,11 +40,11 @@ class BearBlindDevice extends Homey.Device {
         if (!Array.isArray(this.address)
             || this.address.length !== ADDRESS_LENGTH
             || !CHANNEL_NUMBERS.includes(this.channel)) {
-            this.error('no address or channel stored; the device must be added again');
+            this.error(`${this.ch()} no address or channel stored; the device must be added again`);
             await this.setUnavailable(this.homey.__('errors.not_paired'));
             return;
         }
-        this.log(`initialised; address ${this.address.join('')} channel ${this.channel}`);
+        this.log(`${this.ch()} initialised; address ${this.address.join('')}`);
 
         this.registerCapabilityListener('windowcoverings_state', this.onCapabilityState.bind(this));
 
@@ -54,8 +54,14 @@ class BearBlindDevice extends Homey.Device {
         try {
             await this.driver.registerRXListener(this.onRX);
         } catch (err) {
-            this.error('could not listen for the remote; state may go stale:', err.message);
+            this.error(`${this.ch()} could not listen for the remote; state may go stale:`, err.message);
         }
+    }
+
+    // Homey prefixes a device's log lines with its uuid, which says nothing about
+    // which blind it is, so every message here names the channel as well.
+    ch() {
+        return `ch${this.channel === undefined ? '?' : this.channel}`;
     }
 
     async onUninit() {
@@ -85,10 +91,12 @@ class BearBlindDevice extends Homey.Device {
 
         // setCapabilityValue, not triggerCapabilityListener: this reflects a
         // press that already happened, and must not transmit it back.
-        this.setCapabilityValue('windowcoverings_state', state).catch(this.error);
+        this.setCapabilityValue('windowcoverings_state', state)
+            .catch(err => this.error(`${this.ch()} could not set state:`, err.message));
         this.scheduleIdle(state);
 
-        this.log(`rx ${frame.command} from the remote`);
+        this.log(`${this.ch()} rx ${frame.command} from the remote`
+            + (frame.channel === CHANNEL_ALL ? ' (ALL)' : ''));
     }
 
     async onCapabilityState(value) {
@@ -112,7 +120,8 @@ class BearBlindDevice extends Homey.Device {
         const seconds = Number(this.getSetting('travel_time')) || DEFAULT_TRAVEL_TIME;
         this.idleTimer = this.homey.setTimeout(() => {
             this.idleTimer = null;
-            this.setCapabilityValue('windowcoverings_state', 'idle').catch(this.error);
+            this.setCapabilityValue('windowcoverings_state', 'idle')
+                .catch(err => this.error(`${this.ch()} could not return to idle:`, err.message));
         }, seconds * 1000);
     }
 
@@ -133,9 +142,9 @@ class BearBlindDevice extends Homey.Device {
             // repetitions have finished going out, so this time is call latency
             // rather than airtime.
             await this.signal.tx(payload);
-            this.log(`tx ${command} ok (queued in ${Date.now() - startedAt}ms)`);
+            this.log(`${this.ch()} tx ${command} ok (queued in ${Date.now() - startedAt}ms)`);
         } catch (err) {
-            this.error(`tx ${command} failed after ${Date.now() - startedAt}ms:`, err.message);
+            this.error(`${this.ch()} tx ${command} failed after ${Date.now() - startedAt}ms:`, err.message);
             this.error(`  payload was [${payload.join(',')}]`);
             throw err;
         }
