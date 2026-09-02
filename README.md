@@ -40,7 +40,3 @@ homey app run
 
 `app.json` is generated from `.homeycompose/` by `homey app build` and committed; `npm test` fails
 if the two drift apart.
-
-RF captures are **not committed** — they carry the address that operates the blinds. Put your own
-at `captures/raw-captures.txt` and `npm test` will decode them and check the protocol against your
-hardware; without them those tests skip. See [RF_PROTOCOL.md](RF_PROTOCOL.md) for the format.
