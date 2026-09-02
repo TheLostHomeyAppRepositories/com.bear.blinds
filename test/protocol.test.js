@@ -4,7 +4,8 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 
 const {
-    ADDRESS_LENGTH, CHANNEL_LENGTH, COMMAND_LENGTH, FRAME_LENGTH, RX_FRAME_LENGTH, completeFrame,
+    ADDRESS_LENGTH, CHANNEL_LENGTH, COMMAND_LENGTH, FRAME_LENGTH, RX_FRAME_LENGTH,
+    completeFrame, describeFrame,
     CHANNEL_ALL, CHANNEL_NUMBERS, COMMAND_CODES, COMMAND_NAMES,
     plainByte, complementedByte, toBits, fromBits,
     buildFrame, identifyFrame, sameAddress,
@@ -178,4 +179,28 @@ test('buildFrame refuses input it cannot encode', () => {
     assert.throws(() => buildFrame(ADDRESS, -1, 'up'), /Unknown channel/);
     assert.throws(() => buildFrame(ADDRESS, '1', 'up'), /Unknown channel/);
     assert.throws(() => buildFrame(ADDRESS, 1, 'sideways'), /Unknown command/);
+});
+
+test('describeFrame names the field that failed', () => {
+    // Two rounds of this were decoded by hand off a log line. It says which
+    // check failed so an unimplemented button, a foreign channel and a decoding
+    // bug are distinguishable at a glance.
+    const frame = (channel, byte) => [
+        ...ADDRESS, ...toBits(channel, CHANNEL_LENGTH), ...toBits(byte, COMMAND_LENGTH),
+    ];
+
+    // Pressing up and down together: a well-formed frame carrying code 0x7,
+    // which this app does not implement.
+    assert.match(describeFrame(frame(1, 0x78).slice(0, RX_FRAME_LENGTH)),
+        /ch1 code 0x7 .* unimplemented command/);
+    assert.equal(identifyFrame(frame(1, 0x78).slice(0, RX_FRAME_LENGTH)), null);
+
+    assert.match(describeFrame(frame(15, 0x11)), /ch15 .* unknown channel/);
+    assert.match(describeFrame(frame(1, 0x13)), /neither a repeated nor a complemented nibble/);
+    assert.match(describeFrame(Array(4).fill(0)), /4 symbols, expected 39 or 40/);
+    assert.equal(describeFrame(null), 'not an array');
+    assert.equal(describeFrame(Array(FRAME_LENGTH).fill(2)), 'not bits');
+
+    // A frame that does identify still describes cleanly, with nothing flagged.
+    assert.equal(describeFrame(frame(2, 0x33)), 'ch2 code 0x3');
 });

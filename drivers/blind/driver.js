@@ -1,7 +1,7 @@
 'use strict';
 
 const Homey = require('homey');
-const { SIGNAL_ID, CHANNEL_NUMBERS, identifyFrame } = require('./bear-protocol');
+const { SIGNAL_ID, CHANNEL_NUMBERS, identifyFrame, describeFrame } = require('./bear-protocol');
 
 // How long to listen for a button press before giving up, in milliseconds.
 const LEARN_TIMEOUT = 30000;
@@ -39,7 +39,7 @@ class BearBlindDriver extends Homey.Driver {
             if (now - this.lastUnrecognisedLog < UNRECOGNISED_LOG_INTERVAL) return;
 
             const skipped = this.unrecognisedSinceLog - 1;
-            this.log(`rx unrecognised: ${payload.length} symbols`
+            this.log(`rx unrecognised: ${describeFrame(payload)}`
                 + ` [${payload.join('')}]${deviation === undefined ? '' : ` dev ${deviation}`}`
                 + (skipped > 0 ? ` (+${skipped} more in the last minute)` : ''));
             this.lastUnrecognisedLog = now;

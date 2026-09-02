@@ -113,6 +113,34 @@ function identifyFrame(payload) {
     return { address: frame.slice(0, ADDRESS_LENGTH), channel, command };
 }
 
+// A short account of why a frame was not identified, for the log. Naming the
+// field that failed is what separates an unimplemented button from noise, and
+// from a decoding bug, without having to decode the bits by hand.
+function describeFrame(payload) {
+    if (!Array.isArray(payload)) return 'not an array';
+    if (payload.length !== FRAME_LENGTH && payload.length !== RX_FRAME_LENGTH) {
+        return `${payload.length} symbols, expected ${RX_FRAME_LENGTH} or ${FRAME_LENGTH}`;
+    }
+    if (!payload.every(bit => bit === 0 || bit === 1)) return 'not bits';
+
+    const badByte = 'command byte is neither a repeated nor a complemented nibble';
+    const frame = payload.length === RX_FRAME_LENGTH ? completeFrame(payload) : payload;
+    if (frame === null) return badByte;
+
+    const channel = fromBits(frame.slice(ADDRESS_LENGTH, ADDRESS_LENGTH + CHANNEL_LENGTH));
+    const byte = fromBits(frame.slice(ADDRESS_LENGTH + CHANNEL_LENGTH));
+    const code = byte >> 4;
+    // completeFrame already established this for a 39-symbol frame, but a full
+    // 40-symbol one arrives unchecked, and must be held to the same rule.
+    if (byte !== plainByte(code) && byte !== complementedByte(code)) return badByte;
+
+    const wrong = [];
+    if (channel !== CHANNEL_ALL && !CHANNEL_NUMBERS.includes(channel)) wrong.push('unknown channel');
+    if (!COMMAND_BY_CODE.has(code)) wrong.push('unimplemented command');
+
+    return `ch${channel} code 0x${code.toString(16)}${wrong.length ? ` — ${wrong.join(', ')}` : ''}`;
+}
+
 // Whether a received frame came from a given handset, so one household's remote
 // can't drive another's blinds.
 function sameAddress(a, b) {
@@ -138,6 +166,7 @@ module.exports = {
     toBits,
     fromBits,
     completeFrame,
+    describeFrame,
     buildFrame,
     identifyFrame,
     sameAddress,
