@@ -1,6 +1,12 @@
 # Homey app for "Bear" blind and awning automation
 
-Control Bear outdoor blinds and awnings from Homey, by emulating the 5-channel 433 MHz remote.
+<br>
+<div align="center">
+  <img src="drivers/blind/assets/images/large.png" alt="5 channel Bear remote">
+</div>
+<br>
+
+Control Bear outdoor blinds and awnings from Homey, by emulating the 5-channel 433 MHz Bear remote.
 
 What works:
 
