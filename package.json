@@ -1,7 +1,7 @@
 {
   "name": "com.bear.blinds",
   "version": "1.0.0",
-  "description": "Adds support for outdoor blinds controlled by a Bear 5-channel 433 MHz remote.",
+  "description": "Blinds and awnings driven by a Bear 5-channel 433 MHz remote.",
   "main": "app.js",
   "license": "GPL-3.0",
   "author": "John Bothe <jbothe@gmail.com>",

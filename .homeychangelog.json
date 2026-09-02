@@ -1,8 +1,8 @@
 {
   "1.0.0": {
-    "en": "First release. Up, stop and down for each of the remote's five channels, pairing that learns your own handset so the app only drives your blinds, and a state that follows the handset when you use it by hand.",
+    "en": "First release. Up, stop and down for each of the remote’s five channels, pairing that learns your own handset so the app only drives your own blinds and awnings, and a state that follows the handset when you use it by hand.",
     "nl": "Eerste versie. Omhoog, stop en omlaag voor elk van de vijf kanalen van de afstandsbediening, koppelen waarbij Homey je eigen afstandsbediening leert zodat de app alleen jouw zonwering aanstuurt, en een status die de afstandsbediening volgt als je die met de hand gebruikt.",
-    "de": "Erste Version. Auf, Stopp und Ab für jeden der fünf Kanäle der Fernbedienung, eine Kopplung, die deine eigene Fernbedienung lernt, sodass die App nur deine Jalousien steuert, und ein Status, der der Fernbedienung bei manueller Bedienung folgt.",
-    "fr": "Première version. Montée, stop et descente pour chacun des cinq canaux de la télécommande, un appairage qui apprend votre propre télécommande afin que l'application ne pilote que vos stores, et un état qui suit la télécommande lorsque vous l'utilisez à la main."
+    "de": "Erste Version. Auf, Stopp und Ab für jeden der fünf Kanäle der Fernbedienung, eine Kopplung, die deine eigene Fernbedienung lernt, sodass die App nur deine Jalousien und Markisen steuert, und ein Status, der der Fernbedienung bei manueller Bedienung folgt.",
+    "fr": "Première version. Montée, stop et descente pour chacun des cinq canaux de la télécommande, un appairage qui apprend votre propre télécommande afin que l’application ne pilote que vos stores et bannes, et un état qui suit la télécommande lorsque vous l’utilisez à la main."
   }
 }

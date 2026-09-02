@@ -11,16 +11,65 @@
     "en": "Bear"
   },
   "description": {
-    "en": "Raise and lower your outdoor blinds from Homey.",
-    "nl": "Zet je buitenzonwering omhoog en omlaag vanuit Homey.",
-    "de": "Fahre deine Außenjalousien aus Homey hoch und runter.",
-    "fr": "Montez et descendez vos stores extérieurs depuis Homey."
+    "en": "Blinds and awnings that move with the sun.",
+    "nl": "Zonwering die met de zon meebeweegt.",
+    "de": "Jalousien und Markisen, die der Sonne folgen.",
+    "fr": "Stores et bannes qui suivent le soleil."
   },
   "tags": {
-    "en": ["bear", "blind", "blinds", "awning", "sunshade", "screen", "outdoor", "remote", "433"],
-    "nl": ["bear", "zonwering", "buitenzonwering", "screen", "screens", "markies", "rolluik", "afstandsbediening", "433"],
-    "de": ["bear", "jalousie", "jalousien", "markise", "raffstore", "sonnenschutz", "außenjalousie", "fernbedienung", "433"],
-    "fr": ["bear", "store", "stores", "banne", "brise-soleil", "extérieur", "télécommande", "433"]
+    "en": [
+      "bear",
+      "blind",
+      "blinds",
+      "awning",
+      "awnings",
+      "sunshade",
+      "screen",
+      "shutter",
+      "outdoor",
+      "patio",
+      "remote",
+      "433"
+    ],
+    "nl": [
+      "bear",
+      "zonwering",
+      "buitenzonwering",
+      "screen",
+      "screens",
+      "markies",
+      "markiezen",
+      "zonnescherm",
+      "uitvalscherm",
+      "rolluik",
+      "afstandsbediening",
+      "433"
+    ],
+    "de": [
+      "bear",
+      "jalousie",
+      "jalousien",
+      "markise",
+      "markisen",
+      "raffstore",
+      "sonnenschutz",
+      "außenjalousie",
+      "terrasse",
+      "fernbedienung",
+      "433"
+    ],
+    "fr": [
+      "bear",
+      "store",
+      "stores",
+      "banne",
+      "store banne",
+      "brise-soleil",
+      "extérieur",
+      "terrasse",
+      "télécommande",
+      "433"
+    ]
   },
   "category": [
     "appliances"

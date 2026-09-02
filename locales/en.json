@@ -3,9 +3,9 @@
     "not_paired": "Add this blind again so Homey can learn your remote."
   },
   "pair": {
-    "title": "Add blinds",
+    "title": "Add shading",
     "listening": "Press a button on your remote",
-    "listening_hint": "Hold the Bear remote near Homey and press UP, STOP or DOWN on any channel, so Homey can learn which remote your blinds belong to.",
+    "listening_hint": "Hold the Bear remote near Homey and press UP, STOP or DOWN on any channel, so Homey can learn which remote your blinds and awnings belong to.",
     "heard": "Signals heard:",
     "found": "Remote found",
     "failed": "Couldn't find your remote",

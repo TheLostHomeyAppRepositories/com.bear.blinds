@@ -3,9 +3,9 @@
     "not_paired": "Füge diese Jalousie erneut hinzu, damit Homey deine Fernbedienung lernen kann."
   },
   "pair": {
-    "title": "Jalousien hinzufügen",
+    "title": "Sonnenschutz hinzufügen",
     "listening": "Drücke eine Taste auf deiner Fernbedienung",
-    "listening_hint": "Halte die Bear-Fernbedienung in die Nähe von Homey und drücke AUF, STOPP oder AB auf einem beliebigen Kanal, damit Homey lernt, zu welcher Fernbedienung deine Jalousien gehören.",
+    "listening_hint": "Halte die Bear-Fernbedienung in die Nähe von Homey und drücke AUF, STOPP oder AB auf einem beliebigen Kanal, damit Homey lernt, zu welcher Fernbedienung deine Jalousien und Markisen gehören.",
     "heard": "Gehörte Signale:",
     "found": "Fernbedienung gefunden",
     "failed": "Deine Fernbedienung wurde nicht gefunden",

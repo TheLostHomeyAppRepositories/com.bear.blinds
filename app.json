@@ -12,10 +12,10 @@
     "en": "Bear"
   },
   "description": {
-    "en": "Raise and lower your outdoor blinds from Homey.",
-    "nl": "Zet je buitenzonwering omhoog en omlaag vanuit Homey.",
-    "de": "Fahre deine Außenjalousien aus Homey hoch und runter.",
-    "fr": "Montez et descendez vos stores extérieurs depuis Homey."
+    "en": "Blinds and awnings that move with the sun.",
+    "nl": "Zonwering die met de zon meebeweegt.",
+    "de": "Jalousien und Markisen, die der Sonne folgen.",
+    "fr": "Stores et bannes qui suivent le soleil."
   },
   "tags": {
     "en": [
@@ -23,9 +23,12 @@
       "blind",
       "blinds",
       "awning",
+      "awnings",
       "sunshade",
       "screen",
+      "shutter",
       "outdoor",
+      "patio",
       "remote",
       "433"
     ],
@@ -36,6 +39,9 @@
       "screen",
       "screens",
       "markies",
+      "markiezen",
+      "zonnescherm",
+      "uitvalscherm",
       "rolluik",
       "afstandsbediening",
       "433"
@@ -45,9 +51,11 @@
       "jalousie",
       "jalousien",
       "markise",
+      "markisen",
       "raffstore",
       "sonnenschutz",
       "außenjalousie",
+      "terrasse",
       "fernbedienung",
       "433"
     ],
@@ -56,8 +64,10 @@
       "store",
       "stores",
       "banne",
+      "store banne",
       "brise-soleil",
       "extérieur",
+      "terrasse",
       "télécommande",
       "433"
     ]
@@ -86,7 +96,10 @@
     {
       "id": "blind",
       "name": {
-        "en": "Bear Blind"
+        "en": "Blind",
+        "nl": "Zonwering",
+        "de": "Jalousie",
+        "fr": "Store"
       },
       "images": {
         "large": "/drivers/blind/assets/images/large.png",

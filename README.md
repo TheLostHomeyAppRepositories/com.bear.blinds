@@ -1,6 +1,6 @@
-# Bear — outdoor blinds
+# Bear — blinds and awnings
 
-Control outdoor blinds from Homey, by emulating a 5-channel Bear 433 MHz remote.
+Control Bear outdoor blinds and awnings from Homey, by emulating the 5-channel 433 MHz remote.
 
 What works:
 
@@ -12,12 +12,12 @@ What works:
 
 Not supported:
 
-* **Position.** The blinds send nothing back, so there is no way to know where one actually is.
+* **Position.** The motors send nothing back, so there is no way to know where one actually is.
   Homey shows a blind as moving for its configured travel time after a command, then as idle.
 
 ## Pairing
 
-Homey learns which blinds to talk to by listening to your existing remote. When adding a device,
+Homey learns which motors to talk to by listening to your existing remote. When adding a device,
 hold the handset near Homey and press any button. Homey captures the remote's address and offers
 all five channels; tick the ones you want.
 

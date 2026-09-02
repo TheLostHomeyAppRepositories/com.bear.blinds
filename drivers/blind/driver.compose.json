@@ -1,19 +1,28 @@
 {
   "id": "blind",
   "name": {
-    "en": "Bear Blind"
+    "en": "Blind",
+    "nl": "Zonwering",
+    "de": "Jalousie",
+    "fr": "Store"
   },
   "images": {
     "large": "/drivers/blind/assets/images/large.png",
     "small": "/drivers/blind/assets/images/small.png"
   },
   "class": "sunshade",
-  "platforms": [ "local" ],
-  "connectivity": [ "rf433" ],
+  "platforms": [
+    "local"
+  ],
+  "connectivity": [
+    "rf433"
+  ],
   "rf433": {
     "satelliteMode": true
   },
-  "capabilities": [ "windowcoverings_state" ],
+  "capabilities": [
+    "windowcoverings_state"
+  ],
   "settings": [
     {
       "id": "travel_time",
