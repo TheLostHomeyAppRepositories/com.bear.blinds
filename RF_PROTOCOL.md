@@ -73,6 +73,26 @@ blinds.
 Unused codes: `0000`, `0010`, `0100`, `0110`-`1111`. The three in use are the odd values 1, 3 and
 5, which suggests room for more buttons than this handset has.
 
+### An unidentified command
+
+One frame observed on air is a clean transmission from the same handset (deviation 0.008, matching
+real frames) that does not fit the model:
+
+```
+0001000000110010110000100010 0001 1000000?
+address                      ch1  code 0x8, low bits 000?
+```
+
+The address and channel decode normally, but the command byte is neither `0x88` nor `0x87`, so the
+low nibble is not a copy or complement of the high one. Note that `1`, `3` and `5` all have the top
+bit clear while `8` is `1000`, so that bit may select a different message family with a different
+byte layout — a programming or pairing frame would be the obvious candidate.
+
+It is deliberately **not** implemented. `identifyFrame` rejects it, which is the right outcome for a
+frame whose meaning is unknown: acting on it would be a guess, and transmitting it could
+reprogram a motor. Identifying it needs a capture taken while deliberately pressing whichever
+control produces it.
+
 ### The two forms
 
 One press transmits **eight frames at ~10ms intervals: four with the byte plain, then four

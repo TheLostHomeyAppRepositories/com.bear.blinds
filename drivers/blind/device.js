@@ -125,6 +125,7 @@ class BearBlindDevice extends Homey.Device {
         this.idleTimer = this.homey.setTimeout(() => {
             this.idleTimer = null;
             this.setCapabilityValue('windowcoverings_state', 'idle')
+                .then(() => this.log(`${this.ch()} travel time (${seconds}s) elapsed; state now idle`))
                 .catch(err => this.error(`${this.ch()} could not return to idle:`, err.message));
         }, seconds * 1000);
     }
