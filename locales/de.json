@@ -1,0 +1,16 @@
+{
+  "errors": {
+    "not_paired": "Füge diese Jalousie erneut hinzu, damit Homey deine Fernbedienung lernen kann."
+  },
+  "pair": {
+    "title": "Jalousien hinzufügen",
+    "listening": "Drücke eine Taste auf deiner Fernbedienung",
+    "listening_hint": "Halte die Bear-Fernbedienung in die Nähe von Homey und drücke AUF, STOPP oder AB auf einem beliebigen Kanal, damit Homey lernt, zu welcher Fernbedienung deine Jalousien gehören.",
+    "heard": "Gehörte Signale:",
+    "found": "Fernbedienung gefunden",
+    "failed": "Deine Fernbedienung wurde nicht gefunden",
+    "timeout": "Homey hat keinen Tastendruck einer Bear-Fernbedienung gehört. Bringe die Fernbedienung näher an Homey und versuche es erneut.",
+    "retry": "Erneut versuchen",
+    "channel": "Kanal"
+  }
+}

@@ -1,0 +1,3 @@
+Les stores extérieurs sont souvent la dernière chose encore pilotée par une télécommande posée sur le rebord de la fenêtre, bien après que l'éclairage et le chauffage sont passés dans Homey. Cette application les y intègre : les stores descendent quand le soleil frappe la façade sud, remontent avant votre retour, et se ferment d'eux-mêmes le soir.
+
+Homey apprend votre propre télécommande dès que vous ajoutez les stores, et ne parle donc qu'aux vôtres, jamais à ceux du voisin. Chacun des cinq canaux devient un store distinct, et Homey continue d'écouter ensuite : si quelqu'un actionne un store à la main, Homey s'en aperçoit et reste à jour au lieu de conserver silencieusement une idée périmée de leur position.

@@ -1,0 +1,3 @@
+Outdoor blinds tend to be the one thing still worked by a handset left on a windowsill, long after the lights and the heating have moved into Homey. This app brings them in, so the blinds can come down when the sun hits the south side of the house, go up before you get home, and close for the night on their own.
+
+Homey learns your own handset when you add the blinds, so it only ever speaks to yours and never to a neighbour's. Each of the remote's five channels becomes its own blind, and Homey keeps listening afterwards as well: when someone uses the handset by hand, Homey notices and stays in step rather than quietly holding a stale idea of what the blinds are doing.

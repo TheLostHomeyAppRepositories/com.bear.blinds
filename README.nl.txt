@@ -1,0 +1,3 @@
+Buitenzonwering is vaak het laatste dat nog met een afstandsbediening op de vensterbank wordt bediend, lang nadat de verlichting en de verwarming al in Homey zitten. Deze app haalt de zonwering erbij, zodat die omlaag gaat als de zon op de zuidkant staat, omhoog voordat je thuiskomt, en 's avonds vanzelf sluit.
+
+Homey leert je eigen afstandsbediening zodra je de zonwering toevoegt, zodat hij alleen met die van jou praat en nooit met die van de buren. Elk van de vijf kanalen van de afstandsbediening wordt een eigen zonwering, en Homey blijft daarna meeluisteren: bedient iemand de zonwering met de hand, dan merkt Homey dat en blijft de status kloppen in plaats van stilletjes achter te lopen.

@@ -1,0 +1,22 @@
+{
+  "sof": [
+    4770,
+    1538
+  ],
+  "words": [
+    [
+      332,
+      752
+    ],
+    [
+      690,
+      392
+    ]
+  ],
+  "interval": 9700,
+  "sensitivity": 0.5,
+  "repetitions": 8,
+  "minimalLength": 40,
+  "maximalLength": 40,
+  "rxTimeout": 255
+}

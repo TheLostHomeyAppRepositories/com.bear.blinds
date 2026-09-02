@@ -1,0 +1,16 @@
+{
+  "errors": {
+    "not_paired": "Voeg deze zonwering opnieuw toe zodat Homey je afstandsbediening kan leren."
+  },
+  "pair": {
+    "title": "Zonwering toevoegen",
+    "listening": "Druk op een knop van je afstandsbediening",
+    "listening_hint": "Houd de Bear-afstandsbediening bij Homey en druk op OMHOOG, STOP of OMLAAG op een willekeurig kanaal, zodat Homey leert bij welke afstandsbediening je zonwering hoort.",
+    "heard": "Signalen gehoord:",
+    "found": "Afstandsbediening gevonden",
+    "failed": "Je afstandsbediening is niet gevonden",
+    "timeout": "Homey hoorde geen druk op een Bear-afstandsbediening. Houd de afstandsbediening dichter bij Homey en probeer het opnieuw.",
+    "retry": "Opnieuw proberen",
+    "channel": "Kanaal"
+  }
+}

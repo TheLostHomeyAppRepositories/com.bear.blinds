@@ -1,0 +1,16 @@
+{
+  "errors": {
+    "not_paired": "Add this blind again so Homey can learn your remote."
+  },
+  "pair": {
+    "title": "Add blinds",
+    "listening": "Press a button on your remote",
+    "listening_hint": "Hold the Bear remote near Homey and press UP, STOP or DOWN on any channel, so Homey can learn which remote your blinds belong to.",
+    "heard": "Signals heard:",
+    "found": "Remote found",
+    "failed": "Couldn't find your remote",
+    "timeout": "Homey didn't hear a press from a Bear remote. Move the remote closer to Homey and try again.",
+    "retry": "Try again",
+    "channel": "Channel"
+  }
+}

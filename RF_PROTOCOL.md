@@ -1,0 +1,202 @@
+# Bear blind remote 433 MHz RF protocol
+
+Reverse-engineered from 18 button presses captured off a single 5-channel Bear handset with
+Homey's built-in RF signal recorder — every channel and the ALL position, each with UP, DOWN and
+STOP.
+
+This is a working hypothesis, not a manufacturer specification. Treat the structure section as a
+guide for decoding further commands.
+
+## Frame layout
+
+Every frame is 40 bits, and splits into three fields:
+
+```
+[ 0..27 ]  address   identifies the handset, same for every button and channel
+[ 28..31 ] channel   0 for the handset's ALL position, 1-5 for the channels
+[ 32..39 ] command   which button was pressed
+```
+
+The app stores one address and one channel per paired blind, and builds the frame for each action.
+Both live in [`bear-protocol.js`](drivers/blind/bear-protocol.js).
+
+## Signal definition
+
+[`.homeycompose/signals/433/bear.json`](.homeycompose/signals/433/bear.json), compiled into
+`app.json` as `signals.433.bear`. One definition serves both transmit and receive: the properties
+that differ between the two directions (`repetitions`, `sensitivity`, `rxTimeout`) each only affect
+one of them.
+
+| Property | Value | Notes |
+|---|---|---|
+| `sof` | `4770,1538` | preamble pulse and gap, in us |
+| `words` | `[332,752]`, `[690,392]` | index 0 is bit `0`, index 1 is bit `1` |
+| `interval` | `9700` | gap between repetitions (transmit) |
+| `repetitions` | `8` | transmit only; matches the handset, see below |
+| `sensitivity` | `0.5` | match tolerance (receive) |
+| `rxTimeout` | `255` | receive only; a frame is ~50ms, well past the 10ms default |
+| `minimalLength` / `maximalLength` | `40` | every payload is exactly 40 bits |
+
+There is deliberately **no `eof`**, and no `txOnly`. See "Receiving" below.
+
+Measured across all 103 frames in the captures, the timings are tight enough to leave no doubt
+about the alphabet:
+
+| | mean | min | max |
+|---|---|---|---|
+| SOF pulse | 4769 | 4732 | 4784 |
+| SOF gap | 1538 | 1526 | 1550 |
+| bit `0` pulse / gap | 331 / 753 | 314 / 740 | 344 / 768 |
+| bit `1` pulse / gap | 690 / 392 | 676 / 380 | 702 / 404 |
+
+Both symbols run ~1083us, so a 40-bit frame plus preamble is about 50ms.
+
+## Commands
+
+The command byte is a 4-bit code, repeated twice:
+
+| Command | Code | Plain byte | Complemented byte |
+|---|---|---|---|
+| UP | `0001` | `0x11` | `0x1E` |
+| DOWN | `0011` | `0x33` | `0x3C` |
+| STOP | `0101` | `0x55` | `0x5A` |
+
+The low nibble is either a copy of the high nibble or its bitwise complement, which makes each
+frame self-validating without a separate checksum. **There is no checksum over the address or
+channel** — nothing in the frame varies with both fields, which is what makes it possible to
+synthesise any channel's frame from one learned address, and so to pair once and add all five
+blinds.
+
+Unused codes: `0000`, `0010`, `0100`, `0110`-`1111`. The three in use are the odd values 1, 3 and
+5, which suggests room for more buttons than this handset has.
+
+### The two forms
+
+One press transmits **eight frames at ~10ms intervals: four with the byte plain, then four
+complemented.** For example, a press of DOWN on channel 3:
+
+```
+33 33 33 33 3c 3c 3c 3c
+```
+
+The gaps are uniform across the switch (~10.1ms, against ~10.8ms at the boundary), so this is one
+continuous burst, not two presses.
+
+**The app transmits the plain form only**, eight times. Each frame is individually self-consistent,
+so a receiver has no reason to require both forms, and `Signal#tx()` sends one payload repeatedly
+rather than alternating two. If a blind turns out not to respond, sending the complemented form as
+a second `tx()` is the first thing to try.
+
+`repetitions` is `8` to match the handset's eight frames. It matters: on the sibling RC300 app,
+transmitting for materially longer than the real remote made the receiver re-trigger and register
+one Homey command as two presses.
+
+## Channels
+
+The channel nibble is a plain binary counter, and `0000` is the handset's ALL position:
+
+| Channel | Bits |
+|---|---|
+| ALL | `0000` |
+| 1 | `0001` |
+| 2 | `0010` |
+| 3 | `0011` |
+| 4 | `0100` |
+| 5 | `0101` |
+
+ALL is not offered as a device — the five channels are. But a press of it is recognised on receive
+and updates every blind on that handset, so using it by hand doesn't leave Homey holding a stale
+state.
+
+## Receiving: two Homey requirements
+
+Transmitting works from the signal definition alone. Receiving needs two more things, carried over
+from the sibling [RC300 app](https://github.com/jbothe/homey-heatnglo-rc300) where each cost real
+debugging time. Either one missing gives the identical symptom — `enableRX()` resolving
+successfully while no `payload` event ever fires — so they cannot be diagnosed separately.
+
+**1. The driver must declare itself an RF receiver**, in
+[`driver.compose.json`](drivers/blind/driver.compose.json):
+
+```json
+"rf433": { "satelliteMode": true }
+```
+
+Without it Homey routes no received frame to the driver at all, not even for a deliberately
+permissive signal definition. It is documented only in the
+[homey-rfdriver](https://github.com/athombv/node-homey-rfdriver) README, under the transmitter
+(learn from a remote) case.
+
+**2. The signal must omit `eof`.** Homey will not match an incoming frame against a definition
+declaring an `eof` unless it observes that eof on air. `txOnly` must stay absent too; it defaults
+to `false`, so it never needed removing to enable receiving, but setting it would disable it.
+
+Both halves of every press must be accepted on receive, since half the frames of any press carry
+the complemented byte. Accepting only the plain form would make Homey follow the handset
+intermittently — a failure that looks like poor radio range rather than a decoding bug.
+
+## Addressing and pairing
+
+Positions 0-27 never change with the button or the channel, which makes them the per-handset
+address.
+
+The app therefore **learns the address from the user's own handset at pair time** rather than
+shipping one (see [`driver.js`](drivers/blind/driver.js)). It listens on 433 MHz, waits for a
+40-bit frame carrying a channel it knows and a command byte whose halves agree, and keeps the
+leading 28 bits. Matching on that structure is what prevents pairing to an unrelated 433 MHz device
+transmitting nearby.
+
+This clones the existing handset rather than inventing an address and teaching it to each motor.
+Cloning needs only the remote the user already has, and leaves the blinds' own pairing untouched.
+Because one handset drives every channel with the same address, a single press is enough to offer
+all five channels as devices.
+
+**Caveat.** All captures come from one handset, so the data cannot distinguish "unique per unit"
+from "identical on every Bear remote ever made", and cannot show whether part of the 28-bit address
+is really a fixed manufacturer prefix. The product's per-channel behaviour makes the address
+reading far more likely. The same limit applies to the command and channel fields: if any of them
+also varies per unit, a single sample cannot show it. Settling either needs captures from a second,
+independently paired handset.
+
+## Captures
+
+The recorder output is **not committed**: it carries the address that operates the blinds, and
+anyone within 433 MHz range who has it can drive them. Keep your own at
+`captures/raw-captures.txt`, which [`.gitignore`](.gitignore) excludes.
+
+[`test/captures.test.js`](test/captures.test.js) decodes that file on every `npm test` and asserts
+that `buildFrame` reproduces the recorded frames bit-for-bit, which is what ties the shipped tables
+back to the hardware. Without the file those four tests skip rather than fail, so a fresh clone
+still runs green — at the cost of the only check that reaches the radio.
+
+Format: a label line, then the recorder's comma-separated durations, ending in `65535`. Lines
+beginning with `#` are ignored.
+
+```
+Ch 1 Up:
+4757,1538,330,746,342,746,338,744,694,392,...,65535
+
+Ch 1 Down:
+...
+```
+
+Eighteen blocks are expected — `Ch 1`-`Ch 5` and `All`, each with `Up`, `Down` and `Stop`.
+
+One gap remains in the recordings: the STOP captures contain only the first four frames of the
+burst, so the complemented STOP byte `0x5A` is predicted from the pattern rather than observed.
+
+## Adding a command
+
+1. **Capture it.** Use Homey's built-in RF signal recorder in Developer Tools, which is what
+   produced everything above: press the button once and it records raw pulse/gap durations in us
+   for every repeated frame. An SDR with [`rtl_433`](https://github.com/merbanan/rtl_433) or
+   [Universal Radio Hacker](https://github.com/jopohl/urh) works too.
+2. **Decode it** with [`tools/decode-capture.js`](tools/decode-capture.js), which finds the SOF
+   (rather than assuming the capture starts at one — captures often open with a glitchy run),
+   splits the repeats, and reports whether they agree. Disagreement means take the capture again.
+3. **Check it against the structure above.** If it does not fit, document what actually differs
+   rather than forcing it into the model.
+4. **Add the nibble** to `COMMAND_CODES` in [`bear-protocol.js`](drivers/blind/bear-protocol.js),
+   which also registers it for receive via `identifyFrame`, then wire it to a capability.
+5. **Add the capture** to [`captures/`](captures/), so `npm test` covers it.
+6. **Update this document.**

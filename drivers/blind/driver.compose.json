@@ -1,0 +1,60 @@
+{
+  "id": "blind",
+  "name": {
+    "en": "Bear Blind"
+  },
+  "images": {
+    "large": "/drivers/blind/assets/images/large.png",
+    "small": "/drivers/blind/assets/images/small.png"
+  },
+  "class": "sunshade",
+  "platforms": [ "local" ],
+  "connectivity": [ "rf433" ],
+  "rf433": {
+    "satelliteMode": true
+  },
+  "capabilities": [ "windowcoverings_state" ],
+  "settings": [
+    {
+      "id": "travel_time",
+      "type": "number",
+      "label": {
+        "en": "Travel time",
+        "nl": "Looptijd",
+        "de": "Laufzeit",
+        "fr": "Temps de course"
+      },
+      "hint": {
+        "en": "How long this blind takes to travel from one end to the other. The blind sends no feedback, so Homey uses this to know when to stop showing it as moving.",
+        "nl": "Hoelang deze zonwering erover doet van boven naar beneden. De zonwering stuurt niets terug, dus Homey gebruikt dit om te weten wanneer hij niet langer als bewegend getoond wordt.",
+        "de": "Wie lange diese Jalousie von einem Ende zum anderen braucht. Die Jalousie meldet nichts zurück, daher weiß Homey darüber, wann sie nicht mehr als fahrend angezeigt wird.",
+        "fr": "Temps que met ce store pour aller d'une extrémité à l'autre. Le store ne renvoie aucune information, Homey s'en sert donc pour savoir quand cesser de l'afficher en mouvement."
+      },
+      "value": 30,
+      "min": 1,
+      "max": 300,
+      "units": {
+        "en": "s"
+      }
+    }
+  ],
+  "pair": [
+    {
+      "id": "learn",
+      "navigation": {
+        "next": "list_devices"
+      }
+    },
+    {
+      "id": "list_devices",
+      "template": "list_devices",
+      "navigation": {
+        "next": "add_my_devices"
+      }
+    },
+    {
+      "id": "add_my_devices",
+      "template": "add_devices"
+    }
+  ]
+}

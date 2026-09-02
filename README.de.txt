@@ -1,0 +1,3 @@
+Außenjalousien sind oft das Letzte, was noch mit einer Fernbedienung auf der Fensterbank bedient wird, lange nachdem Licht und Heizung längst in Homey stecken. Diese App holt sie dazu: Die Jalousien fahren herunter, wenn die Sonne auf die Südseite trifft, wieder hoch, bevor du nach Hause kommst, und abends von selbst zu.
+
+Homey lernt deine eigene Fernbedienung, sobald du die Jalousien hinzufügst, und spricht so nur mit deinen und nie mit denen der Nachbarn. Jeder der fünf Kanäle wird zu einer eigenen Jalousie, und Homey hört auch danach weiter mit: Bedient jemand die Jalousie von Hand, bekommt Homey das mit und bleibt auf dem aktuellen Stand, statt stillschweigend eine veraltete Annahme zu behalten.

@@ -1,0 +1,16 @@
+{
+  "errors": {
+    "not_paired": "Ajoutez de nouveau ce store afin que Homey puisse apprendre votre télécommande."
+  },
+  "pair": {
+    "title": "Ajouter des stores",
+    "listening": "Appuyez sur une touche de votre télécommande",
+    "listening_hint": "Tenez la télécommande Bear près de Homey et appuyez sur MONTÉE, STOP ou DESCENTE sur n'importe quel canal, afin que Homey apprenne à quelle télécommande vos stores appartiennent.",
+    "heard": "Signaux entendus :",
+    "found": "Télécommande trouvée",
+    "failed": "Votre télécommande est introuvable",
+    "timeout": "Homey n'a entendu aucun appui sur une télécommande Bear. Rapprochez la télécommande de Homey et réessayez.",
+    "retry": "Réessayer",
+    "channel": "Canal"
+  }
+}
