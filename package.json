@@ -10,9 +10,9 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/jbothe/homey-bear-blinds"
+    "url": "https://github.com/jbothe/homey-bear-blind-automation"
   },
   "bugs": {
-    "url": "https://github.com/jbothe/homey-bear-blinds/issues"
+    "url": "https://github.com/jbothe/homey-bear-blind-automation/issues"
   }
 }

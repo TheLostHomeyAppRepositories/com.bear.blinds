@@ -88,10 +88,10 @@
     "email": "jbothe@gmail.com"
   },
   "bugs": {
-    "url": "https://github.com/jbothe/homey-bear-blinds/issues"
+    "url": "https://github.com/jbothe/homey-bear-blind-automation/issues"
   },
-  "support": "https://github.com/jbothe/homey-bear-blinds/issues",
-  "source": "https://github.com/jbothe/homey-bear-blinds",
+  "support": "https://github.com/jbothe/homey-bear-blind-automation/issues",
+  "source": "https://github.com/jbothe/homey-bear-blind-automation",
   "drivers": [
     {
       "id": "blind",
