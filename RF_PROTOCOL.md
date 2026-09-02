@@ -87,14 +87,30 @@ implements, which the log says in as many words. Implemented codes are the odd v
 and 7 fits that pattern, so the handset's button matrix likely encodes combinations in the same
 field rather than in a separate one.
 
-One further frame has been seen that fits nothing: correct address and channel 1, clean deviation,
-but a command byte whose low nibble is neither a copy nor a complement of the high one (`0x8`
-followed by `000`). It has been observed once, against many clean repeats of every other frame, so
-a corrupted reception is the likeliest explanation rather than a message family of its own. Worth
-revisiting only if it recurs and can be tied to a deliberate button press.
+**UP+STOP and DOWN+STOP both transmit a third frame**, identical to each other, that fits nothing:
 
-Neither is implemented, and neither should be transmitted speculatively: a frame whose meaning is
-unknown could plausibly reprogram a motor.
+```
+0001000000110010110000100010 0001 1000000?
+address                      ch1  high nibble 0x8, low 000?
+```
+
+Taken at face value the byte is `0x80` or `0x81`, and neither is the plain (`0x88`) or complemented
+(`0x87`) form of code `0x8`. It is reproducible and identical from two different button
+combinations, so it is not a corrupted reception — an earlier revision of this document said it
+probably was, on a single sighting, and that was wrong.
+
+Exactly one structurally valid byte becomes these bits by losing a single symbol: `0x88`
+(`10001000`) with bit 4 deleted. That makes "the frame is code `0x8` plain, and a symbol is being
+dropped mid-frame as well as at the end" the leading hypothesis, but it cannot be tested through
+Homey's receiver, since Homey's own handling of the trailing word is exactly what is in question.
+
+Settling it needs a signal-recorder capture of UP+STOP, decoded with
+[`tools/decode-capture.js`](tools/decode-capture.js), which reads the raw durations and accounts
+for the trailing gap explicitly rather than inferring the frame from what Homey delivers.
+
+None of these is implemented, and none should be transmitted speculatively: a frame whose meaning
+is unknown could plausibly reprogram a motor. All three combinations do nothing to the blind when
+sent by the handset itself.
 
 ### The two forms
 
