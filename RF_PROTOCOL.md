@@ -73,44 +73,35 @@ blinds.
 Unused codes: `0000`, `0010`, `0100`, `0110`-`1111`. The three in use are the odd values 1, 3 and
 5, which suggests room for more buttons than this handset has.
 
-### Codes this app does not implement
+### Two buttons at once
 
-Pressing **UP and DOWN together** transmits a well-formed frame carrying code `0x7`:
+Pressing two buttons together transmits something, and the blind ignores it. The frames do not
+decode as commands, and are not stable:
 
-```
-0001000000110010110000100010 0001 0111100?
-address                      ch1  0x78 = complemented form of code 0x7
-```
+| Pressed | Command bits (7 of 8) | Implied code |
+|---|---|---|
+| UP + DOWN | `0111100` | `0x7` |
+| UP + DOWN, another press | `1000001` | `0x8` |
+| UP + STOP | `1000000` | `0x8` |
+| DOWN + STOP | `1000000` | `0x8` |
 
-It has no effect on the blind. `identifyFrame` rejects it because `0x7` is not a command the app
-implements, which the log says in as many words. Implemented codes are the odd values 1, 3 and 5,
-and 7 fits that pattern, so the handset's button matrix likely encodes combinations in the same
-field rather than in a separate one.
+Two things rule these out as commands. **The same combination gives different codes** on different
+presses, where every real command repeats its code identically across both halves of the burst. And
+**UP+STOP and DOWN+STOP give bit-identical frames**, where every real command has its own code.
+None of the bytes is the plain or complemented form of its own high nibble either.
 
-**UP+STOP and DOWN+STOP both transmit a third frame**, identical to each other, that fits nothing:
+They read as artefacts of two contacts closing at once — a truncated or collided transmission —
+rather than a message family. An earlier revision of this document claimed UP+DOWN was a command
+carrying code `0x7`, on the strength of one sighting; that was wrong, and so was the revision before
+it that called the same thing a corrupted one-off.
 
-```
-0001000000110010110000100010 0001 1000000?
-address                      ch1  high nibble 0x8, low 000?
-```
+`identifyFrame` rejects all of them, which is the right outcome twice over: they carry no meaning to
+act on, and the blinds themselves do nothing with them. None is ever transmitted — a frame whose
+meaning is unknown could plausibly reprogram a motor.
 
-Taken at face value the byte is `0x80` or `0x81`, and neither is the plain (`0x88`) or complemented
-(`0x87`) form of code `0x8`. It is reproducible and identical from two different button
-combinations, so it is not a corrupted reception — an earlier revision of this document said it
-probably was, on a single sighting, and that was wrong.
-
-Exactly one structurally valid byte becomes these bits by losing a single symbol: `0x88`
-(`10001000`) with bit 4 deleted. That makes "the frame is code `0x8` plain, and a symbol is being
-dropped mid-frame as well as at the end" the leading hypothesis, but it cannot be tested through
-Homey's receiver, since Homey's own handling of the trailing word is exactly what is in question.
-
-Settling it needs a signal-recorder capture of UP+STOP, decoded with
-[`tools/decode-capture.js`](tools/decode-capture.js), which reads the raw durations and accounts
-for the trailing gap explicitly rather than inferring the frame from what Homey delivers.
-
-None of these is implemented, and none should be transmitted speculatively: a frame whose meaning
-is unknown could plausibly reprogram a motor. All three combinations do nothing to the blind when
-sent by the handset itself.
+Establishing what the handset actually puts on air here would need signal-recorder captures decoded
+with [`tools/decode-capture.js`](tools/decode-capture.js), rather than Homey's already-decoded
+output. There is nothing to gain from it: the blinds ignore these frames however they are read.
 
 ### The two forms
 
