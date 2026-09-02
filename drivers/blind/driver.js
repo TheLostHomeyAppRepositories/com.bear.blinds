@@ -19,10 +19,15 @@ class BearBlindDriver extends Homey.Driver {
         this.signal.on('payload', this.onPayload.bind(this));
     }
 
-    onPayload(payload, isFirst) {
+    onPayload(payload, isFirst, deviation) {
         const frame = identifyFrame(payload);
         if (frame === null) {
-            // Something else on 433 MHz that happens to fit our timings.
+            // Log rather than drop silently. Homey gives the identical symptom —
+            // enableRX() resolving while no payload ever reaches a device —
+            // whether frames are not arriving at all or arriving and failing to
+            // decode, and this line is what tells those two apart.
+            this.log(`rx unrecognised: ${payload.length} symbols`
+                + ` [${payload.join('')}]${deviation === undefined ? '' : ` dev ${deviation}`}`);
             return;
         }
 
@@ -41,7 +46,7 @@ class BearBlindDriver extends Homey.Driver {
 
         if (this.rxListeners.size === 1) {
             await this.signal.enableRX();
-            this.log('RX enabled');
+            this.log(`RX enabled on signal '${SIGNAL_ID}'`);
         }
     }
 
