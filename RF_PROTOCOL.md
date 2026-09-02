@@ -33,9 +33,9 @@ one of them.
 | `words` | `[332,752]`, `[690,392]` | index 0 is bit `0`, index 1 is bit `1` |
 | `interval` | `9700` | gap between repetitions (transmit) |
 | `repetitions` | `8` | transmit only; matches the handset, see below |
-| `sensitivity` | `0.5` | match tolerance (receive) |
+| `sensitivity` | `0.2` | match tolerance (receive), see below |
 | `rxTimeout` | `255` | receive only; a frame is ~50ms, well past the 10ms default |
-| `minimalLength` / `maximalLength` | `40` | every payload is exactly 40 bits |
+| `minimalLength` / `maximalLength` | `39` / `40` | 40 goes out, 39 comes back, see below |
 
 There is deliberately **no `eof`**, and no `txOnly`. See "Receiving" below.
 
@@ -108,12 +108,15 @@ ALL is not offered as a device — the five channels are. But a press of it is r
 and updates every blind on that handset, so using it by hand doesn't leave Homey holding a stale
 state.
 
-## Receiving: two Homey requirements
+## Receiving: four Homey requirements
 
-Transmitting works from the signal definition alone. Receiving needs two more things, carried over
-from the sibling [RC300 app](https://github.com/jbothe/homey-heatnglo-rc300) where each cost real
-debugging time. Either one missing gives the identical symptom — `enableRX()` resolving
-successfully while no `payload` event ever fires — so they cannot be diagnosed separately.
+Transmitting works from the signal definition alone. Receiving needed four separate things. The
+first two are carried over from the sibling
+[RC300 app](https://github.com/jbothe/homey-heatnglo-rc300); the last two were found here. All four
+give the same symptom — `enableRX()` resolving successfully while nothing reaches a device — which
+is why [`driver.js`](drivers/blind/driver.js) logs every payload it cannot identify. That one log
+line is what separates "no frames arriving" from "frames arriving and not decoding", and it turned
+the last two of these from guesswork into a single run each.
 
 **1. The driver must declare itself an RF receiver**, in
 [`driver.compose.json`](drivers/blind/driver.compose.json):
@@ -130,6 +133,42 @@ permissive signal definition. It is documented only in the
 **2. The signal must omit `eof`.** Homey will not match an incoming frame against a definition
 declaring an `eof` unless it observes that eof on air. `txOnly` must stay absent too; it defaults
 to `false`, so it never needed removing to enable receiving, but setting it would disable it.
+
+**3. `sensitivity` must keep the two symbols apart.** It is a fractional tolerance, so a value that
+sounds safely permissive can make the alphabet ambiguous. At `0.5` the windows overlap by 153us on
+the pulse and 212us on the gap — a 400us pulse matches both bit `0` and bit `1`, and nothing
+decodes:
+
+| sensitivity | bit `0` pulse | bit `1` pulse | overlap |
+|---|---|---|---|
+| 0.5 | 166-498 | 345-1035 | 153us |
+| 0.3 | 232-432 | 483-897 | none |
+| 0.2 | 266-398 | 552-828 | none |
+
+`0.2` separates them cleanly and still contains every duration measured across the captures. Real
+frames then arrive at a deviation of ~0.008-0.013, matching the ~0.009 the RC300 app sees.
+
+**4. A received frame is one symbol shorter than a transmitted one.** A word is a (pulse, gap)
+pair, but the last bit's gap on air is the ~10ms gap to the next frame, not the symbol's own 392 or
+752us. Homey therefore never closes the final word and delivers **39 symbols, not 40** — with the
+last bit dropped whatever its value:
+
+```
+transmitted   0001000000110010110000100010 0001 00010001    (40)
+received      0001000000110010110000100010 0001 0001000     (39)
+```
+
+So `minimalLength` is `39` and `maximalLength` is `40`. Requiring exactly 40 makes the app
+completely deaf while looking like a radio problem. (The decoder in
+[`tools/decoder.js`](tools/decoder.js) has to special-case the same trailing gap when reading
+captures, which is the corroborating evidence that the frame really is 40 bits on air.)
+
+The dropped bit is not guessed. The command byte carries its nibble twice, so the seven surviving
+bits determine the eighth — and uniquely, since a nibble and its complement differ in *every*
+position, so the two candidate completions can never both form a valid byte. `completeFrame` in
+[`bear-protocol.js`](drivers/blind/bear-protocol.js) restores it, and returns null when neither
+candidate is valid, which is what keeps the shorter length from weakening the check against
+unrelated 433 MHz traffic.
 
 Both halves of every press must be accepted on receive, since half the frames of any press carry
 the complemented byte. Accepting only the plain form would make Homey follow the handset

@@ -51,13 +51,11 @@ test('the driver is a blind that Homey will route received frames to', () => {
     assert.equal(driverCompose.rf433.satelliteMode, true);
 });
 
-test('the signal accepts the frame length the protocol builds', () => {
-    // The window is deliberately wider than the frame while RX is being brought
-    // up, so a frame that loses a symbol surfaces in the log instead of being
-    // dropped by Homey before the payload event. identifyFrame still requires
-    // exactly FRAME_LENGTH, so nothing shorter can reach a device.
-    assert.ok(signal.minimalLength <= protocol.FRAME_LENGTH, 'minimalLength admits the frame');
-    assert.ok(signal.maximalLength >= protocol.FRAME_LENGTH, 'maximalLength admits the frame');
-    assert.equal(identifyFrame(Array(protocol.FRAME_LENGTH - 1).fill(0)), null);
-    assert.equal(identifyFrame(Array(protocol.FRAME_LENGTH + 1).fill(0)), null);
+test('the signal admits both the transmitted and the received frame length', () => {
+    // 40 goes out; 39 comes back, because Homey never closes the final word.
+    // The window has to cover both or the app is deaf, and nothing wider —
+    // every other length is noise.
+    assert.equal(signal.minimalLength, protocol.RX_FRAME_LENGTH);
+    assert.equal(signal.maximalLength, protocol.FRAME_LENGTH);
+    assert.equal(protocol.RX_FRAME_LENGTH, protocol.FRAME_LENGTH - 1);
 });

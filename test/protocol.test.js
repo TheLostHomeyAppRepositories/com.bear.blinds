@@ -4,7 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 
 const {
-    ADDRESS_LENGTH, CHANNEL_LENGTH, COMMAND_LENGTH, FRAME_LENGTH,
+    ADDRESS_LENGTH, CHANNEL_LENGTH, COMMAND_LENGTH, FRAME_LENGTH, RX_FRAME_LENGTH, completeFrame,
     CHANNEL_ALL, CHANNEL_NUMBERS, COMMAND_CODES, COMMAND_NAMES,
     plainByte, complementedByte, toBits, fromBits,
     buildFrame, identifyFrame, sameAddress,
@@ -80,14 +80,66 @@ test('the complemented form of every command is received too', () => {
     }
 });
 
+test('a frame arrives one symbol short, and the missing bit is recovered', async (t) => {
+    // Homey never closes the final word, because that bit's gap on air is the
+    // gap to the next frame. Every received frame therefore arrives as 39
+    // symbols; rejecting those would mean receiving nothing at all.
+    await t.test('every channel and button, in both byte forms', () => {
+        for (const channel of ALL_CHANNELS) {
+            for (const command of COMMAND_NAMES) {
+                for (const byte of [plainByte(COMMAND_CODES[command]),
+                    complementedByte(COMMAND_CODES[command])]) {
+                    const sent = [
+                        ...ADDRESS,
+                        ...toBits(channel, CHANNEL_LENGTH),
+                        ...toBits(byte, COMMAND_LENGTH),
+                    ];
+                    const received = sent.slice(0, RX_FRAME_LENGTH);
+
+                    assert.equal(received.length, 39);
+                    assert.deepEqual(completeFrame(received), sent, `ch${channel} ${command} 0x${byte.toString(16)}`);
+                    assert.deepEqual(identifyFrame(received), { address: ADDRESS, channel, command });
+                }
+            }
+        }
+    });
+
+    await t.test('the completion is never ambiguous', () => {
+        // A nibble and its complement differ in every position, so at most one
+        // of the two candidate last bits can produce a valid byte.
+        for (const command of COMMAND_NAMES) {
+            for (const byte of [plainByte(COMMAND_CODES[command]),
+                complementedByte(COMMAND_CODES[command])]) {
+                const head = [...ADDRESS, ...toBits(1, CHANNEL_LENGTH), ...toBits(byte, COMMAND_LENGTH)]
+                    .slice(0, RX_FRAME_LENGTH);
+                const valid = [0, 1].filter((last) => {
+                    const frame = [...head, last];
+                    const b = fromBits(frame.slice(ADDRESS_LENGTH + CHANNEL_LENGTH));
+                    return b === plainByte(b >> 4) || b === complementedByte(b >> 4);
+                });
+                assert.equal(valid.length, 1, `0x${byte.toString(16)} has ${valid.length} completions`);
+            }
+        }
+    });
+
+    await t.test('a 39-symbol tail that completes to nothing valid is rejected', () => {
+        const head = [...ADDRESS, ...toBits(1, CHANNEL_LENGTH), ...toBits(0b0010011, 7)];
+        assert.equal(head.length, RX_FRAME_LENGTH);
+        assert.equal(completeFrame(head), null);
+        assert.equal(identifyFrame(head), null);
+    });
+});
+
 test('identifyFrame rejects anything that is not one of our frames', async (t) => {
     await t.test('wrong shape', () => {
         assert.equal(identifyFrame(null), null);
         assert.equal(identifyFrame(undefined), null);
         assert.equal(identifyFrame('0,1,0'), null);
         assert.equal(identifyFrame([]), null);
-        assert.equal(identifyFrame(Array(FRAME_LENGTH - 1).fill(0)), null);
+        assert.equal(identifyFrame(Array(FRAME_LENGTH - 2).fill(0)), null);
         assert.equal(identifyFrame(Array(FRAME_LENGTH + 1).fill(1)), null);
+        // 39 is a real length, but all-zero completes to byte 0x00, code 0.
+        assert.equal(identifyFrame(Array(RX_FRAME_LENGTH).fill(0)), null);
         assert.equal(identifyFrame(Array(FRAME_LENGTH).fill(2)), null);
     });
 

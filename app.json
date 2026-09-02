@@ -170,8 +170,8 @@
         "interval": 9700,
         "sensitivity": 0.2,
         "repetitions": 8,
-        "minimalLength": 38,
-        "maximalLength": 42,
+        "minimalLength": 39,
+        "maximalLength": 40,
         "rxTimeout": 255
       }
     }
